@@ -1,0 +1,27 @@
+<DevOpsInsights>
+  <!--
+        Capabilities that can be opted out of at this time:
+        SCM-8, SCM-12, DM-3, DM-4, DM-7, DM-8, DM-9, DM-10, DM-11, TM-1, TM-7, TM-10, TM-14
+ 
+ 
+        WARNING: Opting of Capabilities is intended for Capabilities that will never apply to this
+                 application, not capabilities that just haven't been implemented yet.
+ 
+        Deployment Types: Octopus, Azure, OpsDevDeploy, None
+ 
+        If the "excludeFromScoring" attribute is set to true, then the entire build pipeline will be excluded from being scored
+        and will not be counted towards the number of migrated pipelines.
+ 
+        If the "name" attribute is not provided, the excluded capabilities will apply to all pipelines in the repository.
+ 
+        "coreScriptFolder" specifies the root folder of the core-build.ps1. NOTE: Ensure that the folder path starts with root i.e. /.pipelines and not just .pipelines
+ 
+ 
+        If a reason is not provided for opting out of a capability, that capability will not be opted out of.
+    -->
+  <BuildPipeline excludeFromScoring="true">
+    <Details team="Customer Solutions" owner="Christopher Byrne" businessUnit="Markets, Integration & Gaming Services (MIGS)" />
+    <Capabilities>
+    </Capabilities>
+  </BuildPipeline>
+</DevOpsInsights>

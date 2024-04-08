@@ -1,0 +1,22 @@
+{
+  "BusinessUnit": "Markets, Integration & Gaming Services (MIGS)",
+  "Team": "Customer Solutions",
+  "Owner": "Christopher Byrne",
+  "Product": "QuickFire PowerShell Module",
+  "InnerSourcing": {
+    "Configuration": [
+      {
+        "RepositoryType": "Basic",
+        "CriticalComponent": false
+      }
+    ],
+    "Scorecard": [
+      { "Capability": "Basic Repository Hygiene", "MaturityLevel": "Silver" },
+      { "Capability": "Continuous Integration", "MaturityLevel": "Silver" },
+      { "Capability": "Onboarding and Orientation", "MaturityLevel": "Silver" },
+      { "Capability": "Working Tracking", "MaturityLevel": "Silver" },
+      { "Capability": "Permission Management", "MaturityLevel": "Silver" },
+      { "Capability": "New Start Experience", "MaturityLevel": "Silver" }
+    ]
+  }
+}

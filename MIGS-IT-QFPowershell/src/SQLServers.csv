@@ -1,0 +1,78 @@
+Group,Name,SQLHost,Username
+Quickfire Casino DBs,Quickfire Betway Africa/Goldfishka DB,MITGF1CAS5.mit.mgsops.com,
+Quickfire Casino DBs,Quickfire CIL Raptor DB,CILQF1CAS1.cil.mgsops.com,
+Quickfire Casino DBs,Quickfire GIC Raptor DB,GICQF1CAS5.gic.mgsops.com,
+Quickfire Casino DBs,Quickfire GIC2 Raptor DB,GICQF2CAS5.gic.mgsops.com,
+Quickfire Casino DBs,Quickfire MAL Italy Raptor DB,MALITQF1CAS5.mal.mgsops.com,
+Quickfire Casino DBs,Quickfire MAL Raptor DB,MALQF1CAS5.mal.mgsops.com,
+Quickfire Casino DBs,Quickfire MAL2 Raptor DB,MALQF2CAS5.mal.mgsops.com,
+Quickfire Casino DBs,Quickfire MAL3 Raptor DB,MALQF3CAS5.mal.mgsops.com,
+Quickfire Casino DBs,Quickfire MIT Raptor DB,MITQF1CAS5.mit.mgsops.com,
+Quickfire Casino DBs,Quickfire MIT2 Raptor DB,MITQF2CAS5.mit.mgsops.com,
+Quickfire Casino DBs,Quickfire UAT Italy Raptor DB,UATITQF1CAS5.ioa.mgsops.com,
+Quickfire Casino DBs,Quickfire UAT Raptor,UATQF1CAS5.ioa.mgsops.com,
+Quickfire CasinoArchive DBs,Quickfire Betway Africa/Goldfishka ARCH,MITGF1ARC5.mit.mgsops.com,
+Quickfire CasinoArchive DBs,Quickfire CIL Raptor ARCH,CILQF1ARC1.cil.mgsops.com,
+Quickfire CasinoArchive DBs,Quickfire GIC Raptor ARCH,gicqf1arc5.gic.mgsops.com,
+Quickfire CasinoArchive DBs,Quickfire GIC2 Raptor ARCH,gicqf2arc5.gic.mgsops.com,
+Quickfire CasinoArchive DBs,Quickfire MAL Italy Raptor ARCH,malitqf1arc5.mal.mgsops.com,
+Quickfire CasinoArchive DBs,Quickfire MAL Raptor ARCH,MALQF1ARC5.mal.mgsops.com,
+Quickfire CasinoArchive DBs,Quickfire MAL2 Raptor ARCH,MALQF2ARC5.mal.mgsops.com,
+Quickfire CasinoArchive DBs,Quickfire MAL 3 Raptor ARCH,MALQF3ARC5.mal.mgsops.com,
+Quickfire CasinoArchive DBs,Quickfire MIT Raptor ARCH,MITQF1ARC5.mit.mgsops.com,
+Quickfire CasinoArchive DBs,Quickfire MIT2 Raptor ARCH,MITQF2ARC5.mit.mgsops.com,
+Quickfire CasinoArchive DBs,Quickfire UAT Italy Raptor ARCH,UATITQF1ARC5.ioa.mgsops.com,
+Quickfire CasinoArchive DBs,Quickfire UAT Raptor ARCH,UATQF1ARC5.ioa.mgsops.com,
+Vanguard DBs,Vanguard CIL DB,cilcntcfg1.cil.mgsops.com,
+Vanguard DBs,Vanguard GIC DB,GICSH1VGDB5.gic.mgsops.com,
+Vanguard DBs,Vanguard MAL Italy DB,malitvang1.mal.mgsops.com,
+Vanguard DBs,Vanguard MAL DB,MALQF1VGDB5.mal.mgsops.com,
+Vanguard DBs,Vanguard MIT DB,MITSH1VGDB5.mit.mgsops.com,
+Vanguard DBs,Vanguard UAT DB,UATSH1VGDB5.ioa.mgsops.com,
+VanguardState DB,VanguardState Betway Africa/Goldfishka DB,MITSH1VGDB5.mit.mgsops.com,
+VanguardState DB,VanguardState CIL DB,cilcntcfg1.cil.mgsops.com,
+VanguardState DB,VanguardState GIC DB,GICSH1VGDB5.gic.mgsops.com,
+VanguardState DB,VanguardState GIC2 DB,GICQF2VGDB5.gic.mgsops.com,
+VanguardState DB,VanguardState MAL Italy,MALIT1VGDB5.mal.mgsops.com,
+VanguardState DB,VanguardState MAL DB,MALQF1VGDB5.mal.mgsops.com,
+VanguardState DB,VanguardState MAL DB2,MALQF2VGDB5.mal.mgsops.com,
+VanguardState DB,VanguardState MAL DB3,MALQF3VGDB5.mal.mgsops.com,
+VanguardState DB,VanguardState MIT DB,MITQF1VGDB5.mit.mgsops.com,
+VanguardState DB,VanguardState MIT2 DB,MITQF2VGDB5.mit.mgsops.com,
+VanguardState DB,VanguardState UAT DB,UATSH1VGDB5.ioa.mgsops.com,
+VanguardStateArchive DBs,VanguardStateArchive Betway Africa/Goldfishka DB,MITSH1VGARC5.mit.mgsops.com,
+VanguardStateArchive DBs,VanguardStateArchive CIL DB,cilcntsvcarc2.cil.mgsops.com,
+VanguardStateArchive DBs,VanguardStateArchive GIC DB,GICSH1VGARC5.gic.mgsops.com,
+VanguardStateArchive DBs,VanguardStateArchive GIC2 DB,GICQF2VGARC5.gic.mgsops.com,
+VanguardStateArchive DBs,VanguardStateArchive MAL Italy,MALIT1VGARC5.mal.mgsops.com,
+VanguardStateArchive DBs,VanguardStateArchive MAL DB,MALQF1VGARC5.mal.mgsops.com,
+VanguardStateArchive DBs,VanguardStateArchive MAL2 DB,MALQF2VGARC5.mal.mgsops.com,
+VanguardStateArchive DBs,VanguardStateArchive MAL3 DB,MALQF3VGARC5.mal.mgsops.com,
+VanguardStateArchive DBs,VanguardStateArchive MIT DB,MITQF1VGARC5.mit.mgsops.com,
+VanguardStateArchive DBs,VanguardStateArchive MIT2 DB,MITQF2VGARC5.mit.mgsops.com,
+VanguardStateArchive DBs,VanguardStateArchive UAT DB,UATSH1VGARC5.ioa.mgsops.com,
+Traditional Casino DBs,Alpha Bet Raptor DB (IOA),IOAPM1CAS5.ioa.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,CiP Raptor DB (UAT),IOAUATCIPCAS1.ioa.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,AllSlots Raptor DB (MAL),MALAS1CAS5.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,Bayton Raptor DB (MAL),MALBTN1CAS5.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,Betway 1  Raptor DB (MAL),MALBTW1CAS5.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,Betway 3 - Ontario (MAL),MALBTW3CAS5.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,Betway Germany (MALBTW3CAS5) (MAL),MALBTW3CAS5.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,CasinoAction Raptor DB (MAL),MALCA1CAS5.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,CiP Raptor DB (MAL),MALCIPCAS1.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,Digi Raptor DB (MAL),MALDG1CAS5.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,GM Gaming 2 - Austria (MAL),MALGMG2CAS5.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,GM Gaming 1 Raptor DB (MAL),MALGMG1CAS5.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,Gaming Club (MAL),MALGC1CAS5.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,Lucky Nugget Raptor DB (MAL),MALLN1CAS5.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,MarathonBet Raptor DB (MAL),MAL5793.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,Cadtree Raptor DB - DOS Ontario (MAL),MALCDT1CAS5.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,Riverbelle Raptor DB (MAL),MALRB1CAS5.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,Spin Palace Raptor DB (MAL),MALSPIN1CAS5.mal.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,BJBR Raptor DB (MIT),MITBJB1CAS5.mit.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,BRE Raptor DB (MIT),MITBRE1CAS5.mit.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,Butlers Raptor DB (MIT),MITTPG1CAS5CLUS.mit.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,Casino Rewards (MIT),MITCR1CAS5.mit.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,JackpotInAFlash Raptor DB (MIT),MGS4850.mit.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,TPG Raptor DB (MIT),MITTPG1CAS5.mit.mgsops.com,DBReadOnly_PI
+Traditional Casino DBs,32RED (GIC) Casino DB,GICRED1CAS1.gic.mgsops.com,DBReadOnly_PI

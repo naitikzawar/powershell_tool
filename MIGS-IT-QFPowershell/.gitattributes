@@ -1,0 +1,2 @@
+# We'll let Git's auto-detection algorithm infer if a file is text. If it is, then we force LF line endings.
+* text=auto eol=lf
