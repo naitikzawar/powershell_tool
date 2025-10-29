@@ -223,8 +223,8 @@ function Get-QFRemedyIncident {
         This hashtable will be included in the pipeline output as a member named 'DescriptionFields'.
 
     .PARAMETER IncidentNumber
-        The Incident Number of the ticket you wish to retrieve from the Remedy system. This parameter should in the format 'INCxxxx'
-        e.g. INC1234
+        The Incident Number of the ticket you wish to retrieve from the Remedy system. This parameter must be in the format 'INCxxxx' or 'REQxxxx'
+        e.g. INC1234 or REQ12345668
 
     .EXAMPLE 
         Get-QFRemedyIncident -IncidentNumber INC1234
@@ -247,9 +247,28 @@ function Get-QFRemedyIncident {
     
     $headers = Get-QFRemedyDefaultHeader
     $headers["Content-Type"] = "application/x-www-form-urlencoded"
-    $body = @{
-        "incidentID"  = $IncidentNumber
+
+    $body = $null
+    switch -wildcard ($IncidentNumber) {
+        "INC*" {
+            $body = @{
+                "incidentID"  = $IncidentNumber
+            }
+        }
+        "REQ*" {
+            $body = @{
+                "RequestId"  = $IncidentNumber
+            }
+        }
+        default {
+            $CustomResponse = [PSCustomObject]@{
+                Success = $false
+                Result  = "No valid INC or REQ number"
+            }
+            return $CustomResponse
+        }
     }
+   
 
     try {
         $Response = Invoke-RestMethod $GetIncidentURL -Method 'POST' -Body $body -Headers $Headers -SkipCertificateCheck
@@ -409,19 +428,27 @@ function Update-QFRemedyIncident {
         Updates the specified Incident on the Remedy system. 
         Note that for resolving an incident, a different function (and URL) is used 
     
-    .PARAMETER RequestID
-        The IncidentNumber of the Remedy Incident to be updated.
+    .PARAMETER IncidentNumber
+        The IncidentNumber of the Remedy Incident to be updated. Must be a valid INC number
 
+    .PARAMETER RemedyUsername 
+        The username to which user the ticket to assign to
 
-    .PARAMETER UpdateFields 
-        A hashtable containing Incident Field names to be updated, and their new values.
-        A list of field names can be retrieved via Get-QFRemedyIncident.
-        This will overwrite any values that are already present in these fields.
+    .PARAMETER Status 
+     The Status to set the ticket to. Be sure to confirm available Status/StatusReason values in Remedy
+    
+     .PARAMETER StatusReason 
+     The StatusReason to set the ticket to. Be sure to confirm available Status/StatusReason values in Remedy
+
+     .PARAMETER TeamNotes
+     The teamnotes to be set on the ticket
+     On UpdateIncident teamnotes are put in the TeamNotes field
+     On GetIncident teamnotes are retrieved from the AssigneeNotes field
+     
 
    .EXAMPLE 
-        Update-QFRemedyIncident -IncidentNumber 'INC1240178' $UpdateFields {
-            "TeamNotes" = "Teamnotes update"
-        }
+        Update-QFRemedyIncident INC1240186 'bernhardh' 'Pending' 'Customer Feedback Provided' 'Teamnotes edit'
+        Update-QFRemedyIncident -IncidentNumber 'INC1240261' -RemedyUsername 'bernhardh' -Status 'Pending' -StatusReason 'Pending Closure'
 
     .INPUTS
         This cmdlet will accept a string object via pipeline containing a IncidentNumber of an Incident from the Remedy system.
@@ -442,13 +469,32 @@ function Update-QFRemedyIncident {
 
         [Parameter(Mandatory = $false, Position = 1, ValueFromPipelineByPropertyName = $true)]
         [ValidateNotNullOrEmpty()]
-        [Hashtable]$UpdateFields
+        [string]$RemedyUsername,
+
+        [Parameter(Mandatory = $false, Position = 2, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Status,
+
+        [Parameter(Mandatory = $false, Position = 3, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$StatusReason,
+
+        [Parameter(Mandatory = $false, Position = 4, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$TeamNotes
        
     )
 
-
     $headers = Get-QFRemedyDefaultHeader
+
+    $UpdateFields = @{}
     $UpdateFields.Add("IncidentNumber", $IncidentNumber)
+    if ($null -ne $RemedyUsername) {$UpdateFields.Add("RemedyUsername", $RemedyUsername)}
+    if ($null -ne $Status) {$UpdateFields.Add("Status", $Status)}
+    if ($null -ne $StatusReason) {$UpdateFields.Add("StatusReason", $StatusReason)}  
+    if ($null -ne $TeamNotes) {$UpdateFields.Add("TeamNotes", $TeamNotes)}
+
+    
     $Body = $UpdateFields | ConvertTo-Json
     
 
@@ -482,33 +528,42 @@ function Resolve-QFRemedyIncident {
         This cmdlet can be used to resolve an Incident
         A hash table of Incident Field Names and corresponding Values must be provided, otherwise the Incident will not be updated.
     
-    .PARAMETER Incident
-        The IncidentNumber of the Remedy Incident to be updated.
-
-
-    .PARAMETER UpdateFields 
-        A hashtable containing Incident Field names to be updated, and their new values.
-        A list of field names can be retrieved via Get-QFRemedyIncident.
-        This will overwrite any values that are already present in these fields.
+    .PARAMETER IncidentNumber
+        The IncidentNumber of the Incident to be updated. Must be a valid INC number
+    .PARAMETER RemedyUsername
+        The RemedyUsername of the user with which the Incident will be resolved
+    .PARAMETER Status
+        The Status with which the Incident will be resolved. Be sure to confirm available values in Remedy
+    .PARAMETER StatusReason
+        The StatusReason with which the Incident will be resolved. Be sure to confirm available values in Remedy
+    .PARAMETER ResolutionMethod
+        The ResolutionMethod with which the Incident will be resolved. Be sure to confirm available values in Remedy
+    .PARAMETER DetailedRootCause
+        The DetailedRootCause with which the Incident will be resolved. Be sure to confirm available values in Remedy
+    .PARAMETER ServiceCategory
+        The ServiceCategory with which the Incident will be resolved. Be sure to confirm available values in Remedy
+    .PARAMETER ServiceCategoryTier1
+        The ServiceCategoryTier1 with which the Incident will be resolved. Be sure to confirm available values in Remedy
+    .PARAMETER ServiceCategoryTier2
+        The ServiceCategoryTier2 with which the Incident will be resolved. Be sure to confirm available values in Remedy
+    .PARAMETER Product
+        The Product with which the Incident will be resolved. Be sure to confirm available values in Remedy
+    .PARAMETER Market
+        The Market with which the Incident will be resolved. Be sure to confirm available values in Remedy
+    .PARAMETER Site
+        The Site with which the Incident will be resolved. Be sure to confirm available values in Remedy
+    .PARAMETER ResolutionText
+        The ResolutionText with which the Incident will be resolved. Be sure to confirm available values in Remedy
 
     .EXAMPLE 
-        Update-QFRemedyIncident -IncidentNumber 'INC1240178' -UpdateFields @{
-	        "StatusReason"="No Further Action Required"
-	        "ResolutionText"="test close ticket"
-	        "ResolutionMethod"="Remedy"
-	        "DetailedRootCause"="Operator – Skills and Knowledge (Operator)"
-	        "ServiceCategory"="Quickfire"
-            "ServiceCategoryTier1"= "Operator - Audit"
-            "ServiceCategoryTier2"= "Win Legitimacy"
-	        "RemedyUsername"="bernhardh"
-        }
-
-            Closes the specified Incident. 
-            The Status Reason is set to 'No Further Action Required'.
-
+    Resolve-QFRemedyIncident 'INC1240248' 'bernhardh' 'Resolved' 'Customer Follow-Up Required' 'Remedy' 'Operator - Insufficient Feedback Received' 'Quickfire' 'Operator - Knowledge' 'Non-issue' 'Quickfire' 'N/A' 'Malta Quickfire' 'Resolution text'
+    
+    Resolve-QFRemedyIncident -IncidentNumber $Incident.Id -RemedyUsername $Incident.AssigneeUsername -Status 'Resolved' -StatusReason 'Customer Follow-Up Required' `
+    -ResolutionMethod $NoFeedbackResolutionMethod -DetailedRootCause $NoFeedbackDetailedRootCause `
+    -ServiceCategory $NoFeedbackServiceCategory -ServiceCategoryTier1 $NoFeedbackServiceCategoryTier1 -ServiceCategoryTier2 $NoFeedbackServiceCategoryTier2 `
+    -Product $NoFeedbackProduct -Market $NoFeedbackMarket -Site $NoFeedbackSite -ResolutionText $ResolutionText
     .INPUTS
-        This cmdlet will accept a string object via pipeline containing a IncidentNumber of an Incident from the Remedy system.
-        This cmdlet will also accept a hashtable object containing Incident Field Names to be updated on the specified Incident number, and their corresponding new Values.
+        This cmdlet will accept a string object via pipeline containing a IncidentNumber with the resolution parameters
 
     .OUTPUTS
             A PSCustom Object containing 
@@ -523,15 +578,73 @@ function Resolve-QFRemedyIncident {
         [ValidateNotNullOrEmpty()]
         [string]$IncidentNumber,
 
-        [Parameter(Mandatory = $false, Position = 1, ValueFromPipelineByPropertyName = $true)]
+        [Parameter(Mandatory = $true, Position = 1, ValueFromPipelineByPropertyName = $true)]
         [ValidateNotNullOrEmpty()]
-        [Hashtable]$UpdateFields
-       
+        [string]$RemedyUsername,
+
+        [Parameter(Mandatory = $true, Position = 2, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Status,
+
+        [Parameter(Mandatory = $true, Position = 3, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$StatusReason,
+
+        [Parameter(Mandatory = $true, Position = 4, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ResolutionMethod,
+
+        [Parameter(Mandatory = $true, Position = 5, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$DetailedRootCause,
+
+        [Parameter(Mandatory = $true, Position = 6, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ServiceCategory,
+
+        [Parameter(Mandatory = $true, Position = 7, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ServiceCategoryTier1,
+
+        [Parameter(Mandatory = $true, Position = 8, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ServiceCategoryTier2,
+
+        [Parameter(Mandatory = $true, Position = 9, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Product,
+
+        [Parameter(Mandatory = $true, Position = 10, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Market,
+
+        [Parameter(Mandatory = $true, Position = 11, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Site,
+
+        [Parameter(Mandatory = $true, Position = 12, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ResolutionText
+      
     )
 
-
     $headers = Get-QFRemedyDefaultHeader
+
+    $UpdateFields = @{}
     $UpdateFields.Add("IncidentNumber", $IncidentNumber)
+    $UpdateFields.Add("RemedyUsername", $RemedyUsername)
+    $UpdateFields.Add("Status", $Status)
+    $UpdateFields.Add("StatusReason", $StatusReason)
+    $UpdateFields.Add("ResolutionMethod", $ResolutionMethod)
+    $UpdateFields.Add("DetailedRootCause", $DetailedRootCause)
+    $UpdateFields.Add("ServiceCategory", $ServiceCategory)
+    $UpdateFields.Add("ServiceCategoryTier1", $ServiceCategoryTier1)
+    $UpdateFields.Add("ServiceCategoryTier2", $ServiceCategoryTier2)
+    $UpdateFields.Add("Product", $Product)
+    $UpdateFields.Add("Market", $Market)
+    $UpdateFields.Add("Site", $Site)
+    $UpdateFields.Add("ResolutionText", $ResolutionText)
+
    # $Body = $UpdateFields | ConvertTo-Json
     $Body = ([System.Text.Encoding]::UTF8.GetBytes(($UpdateFields | ConvertTo-Json)))
 
@@ -579,29 +692,31 @@ function New-QFRemedyIncidentWorkInfo {
             The Incident Number of the Remedy Incident to be updated. e.g. INC123456
             This can be retrieved via Get-QFRemedyIncident.
 
-        .PARAMETER WorkInfoFields 
-            A hashtable containing Incident Field names to be updated, and their new values.
-            A list of field names can be retrieved via Get-QFHelixIncident.
-            This will overwrite any values that are already present in these fields.
-            $WorkInfoFields = @{
-                "WorkInfoType"      = "Status Update"
-                "ViewAccess"       = "Public"
-                "Summary"           = "Update"
-                "Notes"             = "Workinfo description"
-            }
+        .PARAMETER RemedyUsername 
+
+        .PARAMETER WorkInfoType 
+        The WorkInfoType with which the Workinfo will be created. Be sure to confirm available values in Remedy
+
+        .PARAMETER ViewAccess 
+        The WorkInfoType with which the Workinfo will be created. Must be 'Internal' or 'Public'
+
+        .PARAMETER Summary 
+        The Summary with which the Workinfo will be created.
+
+        .PARAMETER Notes 
+        The Notes with which the Workinfo will be created.
 
         .PARAMETER files 
             A string[] with the full file paths (maximum 3 files)
             [string[]] $files = 'C:\test1.zip', 'C:\test2.zip'  
 
         .EXAMPLE 
-            New-RemedyIncidentWorkInfo -IncidentNumber 'INC1240183' -WorkInfoFields $WorkInfoFields -Files $Files
-        
-
+            New-QFRemedyIncidentWorkInfo 'INC1240186' 'bernhardh' 'Status Update' 'Public' 'Summary' 'Notes' 'C:\test1.zip'
+            New-QFRemedyIncidentWorkInfo -IncidentNumber 'INC1240261' -RemedyUsername 'bernhardh' -WorkInfoType 'Status Update' -ViewAccess 'Public' -Summary 'CC#1 - Customer feedback required' -Notes 'Notes'
+    
 
         .INPUTS
-            This cmdlet will accept a string object via pipeline containing an Incident Number of an Incident from the Remedy system.
-            This cmdlet will also accept a hashtable object containing the Field Names to be updated on the new Work Info, and their corresponding new Values.
+            This cmdlet will accept a string object via pipeline containing a IncidentNumber and its workinfo parameters
 
         .OUTPUTS
             A PSCustom Object containing 
@@ -617,15 +732,38 @@ function New-QFRemedyIncidentWorkInfo {
 
         [Parameter(Mandatory = $true, Position = 1, ValueFromPipelineByPropertyName = $true)]
         [ValidateNotNullOrEmpty()]
-        [Hashtable]$WorkInfoFields,
+        [string]$RemedyUsername,
 
-        [Parameter(Mandatory = $false, Position = 2, ValueFromPipelineByPropertyName = $true)]
+        [Parameter(Mandatory = $true, Position = 2, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$WorkInfoType,
+
+        [Parameter(Mandatory = $true, Position = 3, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ViewAccess,
+
+        [Parameter(Mandatory = $true, Position = 4, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Summary,
+
+        [Parameter(Mandatory = $true, Position = 5, ValueFromPipelineByPropertyName = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Notes,
+
+        [Parameter(Mandatory = $false, Position = 6, ValueFromPipelineByPropertyName = $true)]
         [ValidateNotNullOrEmpty()]
         [string[]]$Files
     )
 
     $headers = Get-QFRemedyDefaultHeader 
+
+    $WorkInfoFields = @{}
     $WorkInfoFields.Add("Id", $IncidentNumber)
+    $WorkInfoFields.Add("RemedyUsername", $RemedyUsername)
+    $WorkInfoFields.Add("WorkInfoType", $WorkInfoType)
+    $WorkInfoFields.Add("ViewAccess", $ViewAccess)
+    $WorkInfoFields.Add("Summary", $Summary)
+    $WorkInfoFields.Add("Notes", $Notes)
 
     #Add files to body
     $attachmentPrefix = 'Attachment'

@@ -792,6 +792,12 @@ You *really should* use git, it is a very useful tool, and it's part of the Drea
 
 # Changelog
 ---
+## Version: 1.6.4
+* Get-QFPlayCheck - bug fix for broken stylesheets when saving as PDF
+* Get-QFPlayCheck - added support for Jelly ETI provider, will embed link to the provider's video playcheck in the PDF
+* Updated ETIProviders.csv
+
+
 ## Version: 1.6.3
 * Get-QFPlayCheck - bug fix for broken images, added user-agent parameter to Edge call when saving as PDF
 

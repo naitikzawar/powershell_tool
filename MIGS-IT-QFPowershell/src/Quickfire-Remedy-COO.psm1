@@ -5,6 +5,9 @@ $CARRemedyRSSFeedURL = $null
 #Pending Closure RSS Feed
 $PCRemedyRSSFeedURL = $null
 
+#Close ticket no feedback resolution method
+$NoFeedbackResolutionMethod = $null
+
 #Close ticket no feedback detailed root cause
 $NoFeedbackDetailedRootCause = $null
 
@@ -13,12 +16,20 @@ $NoFeedbackServiceCategory = $null
 $NoFeedbackServiceCategoryTier1 = $null
 $NoFeedbackServiceCategoryTier2 = $null
 
+$NoFeedbackProduct = $null
+$NoFeedbackMarket = $null
+$NoFeedbackSite = $null
+
 #List of engineers for which the automation is activated. If $null, the automation activated for everybody
 $ActiveEngineer = $null
 
 #When automation is activated for the first time, we can not blindly sent chasers on all CAR tickets
 #Ticket created date from which tickets are picked up by automation.  If $null, ticket created date will not be checked
 $IncidentCreatedFrom = $null
+
+$CustomerSolutionGroupName = $null
+$ExternalGamingGroupName = $null
+
 
 #RemedyEnvironment variable: Set this in Quickfire-Remedy-Base.psm1, it is set to DEV by default
 switch ($Global:RemedyEnvironment) {
@@ -31,14 +42,24 @@ switch ($Global:RemedyEnvironment) {
         $PCRemedyRSSFeedURL = $null
 
         $NoFeedbackDetailedRootCause = "Operator - Insufficient Feedback Received"
-        
+        $NoFeedbackResolutionMethod = "Remedy"
+
         #On DEV the insufficient feedback category is not available, using other service category
         $NoFeedbackServiceCategory = "Quickfire"
         $NoFeedbackServiceCategoryTier1 = "Operator - Knowledge"
         $NoFeedbackServiceCategoryTier2 = "Non-issue"
 
-        $ActiveEngineer = "bernhardh", "remedyusername2", "remedyusername3"
+        $NoFeedbackProduct = "Quickfire"
+        $NoFeedbackMarket = "N/A"
+        $NoFeedbackSite = "MIT Quickfire"
+
+        #$ActiveEngineer = "bernhardh", "remedyusername2", "remedyusername3"
+        $ActiveEngineer = $null
+
         $IncidentCreatedFrom = $null
+
+        $CustomerSolutionGroupName = 'MIGS - Customer Solutions'
+        $ExternalGamingGroupName = 'MIGS - IT - External Gaming'
     }
     #------------------   PROD configuration  ------------------
     "PROD"{
@@ -46,19 +67,39 @@ switch ($Global:RemedyEnvironment) {
         $PCRemedyRSSFeedURL = "http://quickfirerss.mgsops.net/rss/incidents/pendingclosure"
 
         $NoFeedbackDetailedRootCause = "Operator - Insufficient Feedback Received"
+        $NoFeedbackResolutionMethod = "Remedy"
+
         $NoFeedbackServiceCategory = "Quickfire"
         $NoFeedbackServiceCategoryTier1 = "Insufficient Feedback"
         $NoFeedbackServiceCategoryTier2 = "Insufficient Feedback"
 
-        $ActiveEngineer = "bernhardh", "jennifern", "jeffm", "harleyo", "simonk", "wouters"
+        $NoFeedbackProduct = "Quickfire"
+        $NoFeedbackMarket = "N/A"
+        $NoFeedbackSite = "Derivco Malaga"
+
+        $ActiveEngineer = $null
+        #$ActiveEngineer = "bernhardh", "jennifern", "jeffm", "harleyo", "simonk", "wouters"
 
         $IncidentCreatedFrom = $null
         #$IncidentCreatedFrom = (Get-Date -Year 2024 -Month 2 -Day 19 -Hour 0 -Minute 0 -Second 0)
         
+        $CustomerSolutionGroupName = 'MIGS - Customer Solutions'
+        $ExternalGamingGroupName = 'MIGS - IT - External Gaming'
     }
 }
 
 #------------------   GENERAL configuration  ------------------
+$CustomerSolutionsFooter = "
+
+Kind regards,
+
+Games Global Support"
+
+$ExternalGamingFooter = "
+
+Kind regards,
+
+MIGS IT External Gaming"
 
 $CARChase1Text = "Good day,
 
@@ -66,11 +107,8 @@ We are hopeful that you've had a chance to review the latest comment from our su
 
 Could you provide feedback on our latest message?
 
-If you'd like to provide an update, or require more time to work through our latest message, simply reply to this email and let us know. 
+If you'd like to provide an update, or require more time to work through our latest message, simply reply to this email and let us know." 
 
-Kind regards,
-
-Games Global Support"
 
 
 $CARChase2Text = "Good day,
@@ -79,11 +117,7 @@ We are hopeful that you've had a chance to review the latest comment from our su
 
 If you'd like to provide an update, or require more time to work through our latest message, simply reply to this email and let us know. 
 
-If we don't hear back from you within the next 24 hours, we’ll assume this issue is solved.
-
-Kind regards,
-
-Games Global Support"
+If we don't hear back from you within the next 24 hours, we’ll assume this issue is solved."
 
 
 $insufficientFeedbackResolutionText = "Good day,
@@ -92,12 +126,7 @@ We are closing this call as we are unable continue the investigation without fur
 
 If you'd like to provide an update, or require more time to work through our latest message, simply reply to this email and let us know.
 
-We look forward to hearing back from you.
-
-Kind Regards,
-
-Games Global Support
-AC#1"
+We look forward to hearing back from you."
 
 $CloseErrorMessage = "MIGS Customer Solution automation failed to close this incident.
     
@@ -116,16 +145,16 @@ function New-WorkinfoCARChase1 {
             [PSCustomObject]$Incident
         )
     
-
-    $WorkInfoFields = @{
-        "WorkInfoType"         = "Status Update"
-        "ViewAccess"           = "Public"
-        "Summary"              = "CC#1 - Customer feedback required"
-        "RemedyUsername"       = $Incident.AssigneeUsername
-        "Notes"                = $CARChase1Text
+    $Footer = switch ($Incident.AssignedGroup) {
+        $CustomerSolutionGroupName {$CustomerSolutionsFooter}
+        $ExternalGamingGroupName {$ExternalGamingFooter}
     }
+
+    $Notes = $CARChase1Text + $Footer
+
     # Now call the function to create the work info
-    $NewRemedyIncidentWorkInfoResult = New-QFRemedyIncidentWorkInfo -IncidentNumber $Incident.Id -WorkInfoFields $WorkInfoFields
+    $NewRemedyIncidentWorkInfoResult = New-QFRemedyIncidentWorkInfo -IncidentNumber $Incident.Id -RemedyUsername $Incident.AssigneeUsername -WorkInfoType 'Status Update' -ViewAccess 'Public' -Summary 'CC#1 - Customer feedback required' -Notes $Notes
+
     if ($NewRemedyIncidentWorkInfoResult.Success -eq $true) {
         Write-Host ((Get-RemedyLogPrefix $Incident.RequestId $Incident.Id) + "Created public working log chase #1")
         return $true
@@ -141,15 +170,16 @@ function New-WorkinfoCARChase2 {
             [Parameter(Mandatory = $true, Position = 0)]
             [PSCustomObject]$Incident
         )
-    $WorkInfoFields = @{
-        "WorkInfoType"         = "Status Update"
-        "ViewAccess"           = "Public"
-        "Summary"              = "PC#1 - Customer feedback required"
-        "RemedyUsername"       = $Incident.AssigneeUsername
-        "Notes"                = $CARChase2Text
+
+    $Footer = switch ($Incident.AssignedGroup) {
+        $CustomerSolutionGroupName {$CustomerSolutionsFooter}
+        $ExternalGamingGroupName {$ExternalGamingFooter}
     }
+    $Notes = $CARChase2Text + $Footer
+
     # Now call the function to create the work info
-    $NewRemedyIncidentWorkInfoResult = New-QFRemedyIncidentWorkInfo -IncidentNumber $Incident.Id -WorkInfoFields $WorkInfoFields
+    $NewRemedyIncidentWorkInfoResult = New-QFRemedyIncidentWorkInfo -IncidentNumber $Incident.Id -RemedyUsername $Incident.AssigneeUsername -WorkInfoType 'Status Update' -ViewAccess 'Public' -Summary 'PC#1 - Customer feedback required' -Notes $Notes
+
     if ($NewRemedyIncidentWorkInfoResult.Success -eq $true) {
         Write-Host ((Get-RemedyLogPrefix $Incident.RequestId $Incident.Id) + "Created public working log chase #2")
         return $true
@@ -166,13 +196,8 @@ function Update-IncidentPendingClosure {
             [Parameter(Mandatory = $true, Position = 0)]
             [PSCustomObject]$Incident
         )
-    $UpdateFields = @{
-        "Status"            = "Pending"
-        "StatusReason"      = "Pending Closure"
-        "RemedyUsername"    = $Incident.AssigneeUsername
-        
-    }
-    $UpdateIncidentResult = Update-QFRemedyIncident -IncidentNumber $Incident.Id -UpdateFields $UpdateFields
+
+    $UpdateIncidentResult = Update-QFRemedyIncident -IncidentNumber $Incident.Id -RemedyUsername $Incident.AssigneeUsername -Status 'Pending' -StatusReason 'Pending Closure'
     if ($UpdateIncidentResult.Success -eq $true) {
         Write-Host ((Get-RemedyLogPrefix $Incident.RequestId $Incident.Id) + "Updated ticket status to Pending Closure")
         return $true;
@@ -207,23 +232,21 @@ function Update-IncidentResolve{
     [PSCustomObject]$Incident
   )
 
-    
+    $Footer = switch ($Incident.AssignedGroup) {
+        $CustomerSolutionGroupName {$CustomerSolutionsFooter}
+        $ExternalGamingGroupName {$ExternalGamingFooter}
+    } 
+    $Footer = $Footer + "
+AC#1"
 
-  $UpdateFields = @{
-      "Status"                      = "Resolved"
-      "StatusReason"               = "Customer Follow-Up Required"
-      "ResolutionMethod"            = "Remedy"
-      "DetailedRootCause"           = $NoFeedbackDetailedRootCause
-      "ServiceCategory"             = $NoFeedbackServiceCategory
-      "ServiceCategoryTier1"        = $NoFeedbackServiceCategoryTier1
-      "ServiceCategoryTier2"        = $NoFeedbackServiceCategoryTier2
-      "RemedyUsername"              = $Incident.AssigneeUsername
-      "ResolutionText"              = $insufficientFeedbackResolutionText
-  }
+    $ResolutionText = $InsufficientFeedbackResolutionText + $Footer
 
-
- 
-  $UpdateIncidentResult =  Resolve-QFRemedyIncident -IncidentNumber $Incident.Id -UpdateFields $UpdateFields
+  $UpdateIncidentResult = Resolve-QFRemedyIncident -IncidentNumber $Incident.Id -RemedyUsername $Incident.AssigneeUsername -Status 'Resolved' -StatusReason 'Customer Follow-Up Required' `
+  -ResolutionMethod $NoFeedbackResolutionMethod -DetailedRootCause $NoFeedbackDetailedRootCause `
+  -ServiceCategory $NoFeedbackServiceCategory -ServiceCategoryTier1 $NoFeedbackServiceCategoryTier1 -ServiceCategoryTier2 $NoFeedbackServiceCategoryTier2 `
+  -Product $NoFeedbackProduct -Market $NoFeedbackMarket -Site $NoFeedbackSite -ResolutionText $ResolutionText
+  
+  #$UpdateIncidentResult =  Resolve-QFRemedyIncident -IncidentNumber $Incident.Id -UpdateFields $UpdateFields
   if ($UpdateIncidentResult.Success -eq $true) {
       Write-Host ((Get-RemedyLogPrefix $Incident.RequestId $Incident.Id) + "Updated ticket to Resolved-Customer follow up required")
       return $UpdateIncidentResult            
@@ -240,13 +263,7 @@ function Update-IncidentAssigned {
         [PSCustomObject]$Incident
       )
 
-    $UpdateFields = @{
-        #Setting to Assigned does not work, it will go to status 'In Progress'. However, it will show up in the assigned queue
-        "Status"            = "Assigned"
-        "RemedyUsername"    = $Incident.AssigneeUsername
-    }
-
-    $UpdateIncidentResult = Update-QFRemedyIncident -IncidentNumber $Incident.Id -UpdateFields $UpdateFields
+    $UpdateIncidentResult = Update-QFRemedyIncident -IncidentNumber $Incident.Id -Status 'Assigned' -RemedyUsername $Incident.AssigneeUsername
     if ($UpdateIncidentResult.Success -eq $true) {
         Write-Host ((Get-RemedyLogPrefix $Incident.RequestId $Incident.Id) + "Updated ticket status to Assigned")
         return $true;
@@ -263,15 +280,11 @@ function New-WorkinfoCloseNotificiation{
         [PSCustomObject]$Incident  
       )
 
-    $WorkInfoFields = @{
-        "WorkInfoType"         = "Working Log"
-        "ViewAccess"           = "Internal"
-        "Summary"              = "No customer response - close ticket"
-        "RemedyUsername"       = $Incident.AssigneeUsername
-        "Notes"                = $CloseNotificationText
-    }
+
     # Now call the function to create the work info
-    $NewRemedyIncidentWorkInfoResult = New-QFRemedyIncidentWorkInfo -IncidentNumber $Incident.Id -WorkInfoFields $WorkInfoFields
+    $NewRemedyIncidentWorkInfoResult = New-QFRemedyIncidentWorkInfo -IncidentNumber $Incident.Id -RemedyUsername $Incident.AssigneeUsername `
+    -WorkInfoType 'Working Log' -ViewAccess 'Internal' -Summary 'No customer response - close ticket' -Notes $CloseNotificationText
+
     if ($NewRemedyIncidentWorkInfoResult.Success -eq $true) {
         Write-Host ((Get-RemedyLogPrefix $Incident.RequestId $Incident.Id) + "Created internal working log with close notification")
         return $true
@@ -294,15 +307,9 @@ function New-WorkinfoCloseError{
 
     $CloseErrorMessage = $CloseErrorMessage + $APIErrorMessage
 
-    $WorkInfoFields = @{
-        "WorkInfoType"         = "Working Log"
-        "ViewAccess"           = "Internal"
-        "Summary"              = "Error occurred on closing incident - review"
-        "RemedyUsername"       = $Incident.AssigneeUsername
-        "Notes"                = $CloseErrorMessage
-    }
-    # Now call the function to create the work info
-    $NewRemedyIncidentWorkInfoResult = New-QFRemedyIncidentWorkInfo -IncidentNumber $Incident.Id -WorkInfoFields $WorkInfoFields
+    $NewRemedyIncidentWorkInfoResult = New-QFRemedyIncidentWorkInfo -IncidentNumber $Incident.Id -RemedyUsername $Incident.AssigneeUsername `
+    -WorkInfoType 'Working Log' -ViewAccess 'Internal' -Summary 'Error occurred on closing incident - review' -Notes $CloseErrorMessage
+
     if ($NewRemedyIncidentWorkInfoResult.Success -eq $true) {
         Write-Host ((Get-RemedyLogPrefix $Incident.RequestId $Incident.Id) + "Created internal working log with close error")
         return $true
@@ -347,11 +354,11 @@ function Invoke-ProcessCARTickets {
     $NoActionCount = 0
     $ErrorCount = 0
 
+
     # Process each returned ticket. 
     Foreach ($CARTicket in $CARTicketList.Result) {
 
-        Write-Host ((Get-RemedyLogPrefix $CARTicket.RequestId $CARTicket.IncidentNumber) + "Start")
-        
+      
         #First retrieve the full incident information, do checks
         $Incident = $null
         $GetIncidentResult = Get-QFRemedyIncident $CARTicket.IncidentNumber
@@ -366,7 +373,7 @@ function Invoke-ProcessCARTickets {
         #This should already be covered by the RSS feed query, we do it again for verification
         if (($Incident.Status -notin ('In Progress','Pending')) -or
             ($Incident.StatusReason -ne 'Client Action Required') -or
-            ($Incident.AssignedGroup -ne 'MIGS - Customer Solutions') -or
+            ($Incident.AssignedGroup -notin ($CustomerSolutionGroupName,$ExternalGamingGroupName)) -or
             ($null -eq $Incident.AssigneeUsername)){
             
             Write-Host ((Get-RemedyLogPrefix  $CARTicket.RequestId $CARTicket.IncidentNumber) + "Incident did not pass basic checks for proceding; investigate")
@@ -402,6 +409,7 @@ function Invoke-ProcessCARTickets {
         }
 
         #Ticket is in status Client Action Required
+
         #First find the last Public workinfo
         $lastPublicWorkinfo = $ticketWorkinfosResult.Result | 
         Sort-Object 'Created' -descending | 
@@ -409,6 +417,25 @@ function Invoke-ProcessCARTickets {
             ($_.'View_Access' -eq 'Public')
         } | 
         Select-Object -First 1
+
+        #Check if there are any internal workinfo's containing the nochase tage, that are created only after last Public workinfo
+        $InternalWorkinfoNoChase = $null
+        $InternalWorkinfoNoChase = $ticketWorkinfosResult.Result | 
+        Sort-Object 'Created' -descending | 
+        Where-Object {
+            ($_.'WorkLogType' -eq 'Working Log') -and 
+            ($_.'View_Access' -eq 'Internal') -and 
+            ($_.'Created' -gt $lastPublicWorkinfo.Created) -and
+            ($_.'Summary' -like '*NC#1*')
+        } | 
+        Select-Object -First 1
+
+        #If we found internal workinfo containing nochase tag, cancel automation
+        if ($null -ne $InternalWorkinfoNoChase) {
+            Write-Host ((Get-RemedyLogPrefix  $CARTicket.RequestId $CARTicket.IncidentNumber) + "Found internal workinfo with No chase tage, skipping")
+            $NoActionCount++
+            continue
+        }
 
 
         #First scenario: No chaser has been sent
@@ -502,7 +529,6 @@ function Invoke-ProcessPCTickets {
 
     # Process each returned ticket. 
     Foreach ($PCTicket in $PCTicketList.Result) {
-        Write-Host ((Get-RemedyLogPrefix $PCTicket.RequestId $PCTicket.IncidentNumber) + "Start checking Pending Closure incident for auto action")
         
         #First retrieve the full incident information, do checks
         $Incident = $null
@@ -518,7 +544,7 @@ function Invoke-ProcessPCTickets {
         #This should already be covered by the RSS feed query, we do it again for verification
         if (($Incident.Status -notin ('In Progress','Pending')) -or
             ($Incident.StatusReason -ne 'Pending Closure') -or
-            ($Incident.AssignedGroup -ne 'MIGS - Customer Solutions') -or
+            ($Incident.AssignedGroup -notin ($CustomerSolutionGroupName,$ExternalGamingGroupName)) -or 
             ($null -eq $Incident.AssigneeUsername)){
             
             Write-Host ((Get-RemedyLogPrefix  $PCTicket.RequestId $PCTicket.IncidentNumber) + "Incident did not pass basic checks for proceding; investigate")
@@ -560,6 +586,25 @@ function Invoke-ProcessPCTickets {
              ($_.'View_Access' -eq 'Public')
          } | 
          Select-Object -First 1
+
+        #Check if there are any internal workinfo's containing the nochase tage, that are created only after last Public workinfo
+        $InternalWorkinfoNoChase = $null
+        $InternalWorkinfoNoChase = $ticketWorkinfosResult.Result | 
+        Sort-Object 'Created' -descending | 
+        Where-Object {
+            ($_.'WorkLogType' -eq 'Working Log') -and 
+            ($_.'View_Access' -eq 'Internal') -and 
+            ($_.'Created' -gt $lastPublicWorkinfo.Created) -and
+            ($_.'Summary' -like '*NC#1*')
+        } | 
+        Select-Object -First 1
+
+        #If we found internal workinfo containing nochase tag, cancel automation
+        if ($null -ne $InternalWorkinfoNoChase) {
+            Write-Host ((Get-RemedyLogPrefix  $CARTicket.RequestId $CARTicket.IncidentNumber) + "Found internal workinfo with No chase tage, skipping")
+            $NoActionCount++
+            continue
+        }
 
 
         #First scenario: The ticket has been set to Pending Closure with the PC#1 tag. Either by the automation, or manual by engineer
@@ -630,8 +675,8 @@ function Search-QFRemedyCARIncidentsDummy {
 
     $incidents = @()
     $incident = @{
-        'IncidentNumber' = 'INC1240249'
-        'RequestId' = 'REQ1212186'
+        'IncidentNumber' = 'INC1240188'
+        'RequestId' = 'REQ1212083'
     }
     $incidents += $incident
         
@@ -648,8 +693,8 @@ function Search-QFRemedyPCIncidentsDummy {
     $incidents = @()
     
     $incident = @{
-        'IncidentNumber' = 'INC1240249'
-        'RequestId' = 'REQ1212186'
+        'IncidentNumber' = 'INC1240247'
+        'RequestId' = 'REQ1212184'
     }
 
     $incidents += $incident

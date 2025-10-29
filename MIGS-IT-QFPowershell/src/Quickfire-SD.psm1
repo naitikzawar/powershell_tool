@@ -2,7 +2,7 @@
 #                                                                             #
 #                         Quickfire Powershell Module                         #
 #                         Server Description Functions                        #
-#                                    v1.6.3                                   #
+#                                    v1.6.4                                   #
 #                                                                             #
 ###############################################################################
 

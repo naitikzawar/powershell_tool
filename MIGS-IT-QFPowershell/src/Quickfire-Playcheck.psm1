@@ -2,7 +2,7 @@
 #                                                                             #
 #                         Quickfire Powershell Module                         #
 #                             Playcheck Functions                             #
-#                                     v1.6.3                                  #
+#                                     v1.6.4                                  #
 #                                                                             #
 ###############################################################################
 
@@ -213,7 +213,7 @@ function Get-QFPlayCheck {
                     }
                     Write-Verbose ("[$(Get-Date)] Calling Edge to dump PlayCheck to temporary file: $TempFile - Attempt $i")
                     try {
-                        Start-Process -WindowStyle Hidden -FilePath 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe' -Wait -argumentlist "--headless --dump-dom --no-sandbox --run-all-compositor-stages-before-draw --virtual-time-budget=30000 --proxy-bypass-list=* --proxy-server= --user-agent=""Mozilla/5.0 (Windows NT 10.0; Win64; x64)"" --safe-mode ""$PlaycheckURI""" -RedirectStandardOutput "$TempFile" -ErrorAction Stop
+                        Start-Process -WindowStyle Hidden -FilePath 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe' -Wait -argumentlist "--headless=old --dump-dom --no-sandbox --run-all-compositor-stages-before-draw --virtual-time-budget=30000 --proxy-bypass-list=* --proxy-server= --user-agent=""Mozilla/5.0 (Windows NT 10.0; Win64; x64)"" --safe-mode ""$PlaycheckURI""" -RedirectStandardOutput "$TempFile" -ErrorAction Stop
                     }
                     catch {
                         Write-Warning "Error calling Edge to retrieve PlayCheck (Transaction ID: $Transaction) and saving to a temporary file: $TempFile"
@@ -279,7 +279,7 @@ function Get-QFPlayCheck {
                 # Run the replace regex to edit the temp file HTML source - this reformats the play check so all elements are visible on one page and overwrites the temp file
                 $PlaycheckTemp = $PlaycheckTemp -replace '<div id(=|=3D)"event_(.*)" style(=|=3D)"display: ?none;?" ?>','<div id$1"event_$2" style$3"display: inline;">' # Unhide all extra page sections, so all content on one page
                 $PlaycheckTemp = $PlaycheckTemp -replace '<div id(=|=3D)"event_(.*)" style(=|=3D)"display: ?none;?" ?>','<div id$1"event_$2" style$3"display: inline;">' # Run this regex twice in case it misses some lines... if you have a better solution let me know!
-                $PlaycheckTemp = $PlaycheckTemp -replace '(href|src)="(/.*)"', $('$1="https://' + $PlayCheckHost + '$2"') # Insert the Playcheck Host at the start of any relative links, otherwise images etc will break when Edge loads the file
+                $PlaycheckTemp = $PlaycheckTemp -replace '(href|src)="(/.+?)"', $('$1="https://' + $PlayCheckHost + '$2"') # Insert the Playcheck Host at the start of any relative links, otherwise images etc will break when Edge loads the file
                 $PlaycheckTemp = $PlaycheckTemp -replace '(?mi)<img src="\.\./images/Cards/(.+?)">', $('<img src="https://' + $PlayCheckHost + '/playcheck/Home/GameDetail/images/Cards/$1">') # Insert Playcheck host and full path in relative links for Card images
                 $PlaycheckTemp = $PlaycheckTemp -replace '(<script.*GameDetails.*\/script>)','<!-- $1 -->' # Comment out the GameDetails script as this will hide all the pages again when the playcheck loads in Edge
                 $PlaycheckTemp = $PlaycheckTemp -replace '<img src="\.\./images/.*\.gif">','' # Remove the + Expand image for extra reel positions/bonus rounds; we will expand these sections so this image isnt needed
@@ -290,13 +290,13 @@ function Get-QFPlayCheck {
                 if ($PlaycheckTemp -like "*/Playcheck/Scripts/eti?v=*") {
                     $ETIGame = $true
                     # regex to get the URI for the ETI provider's playcheck
-                    $PlaycheckTemp -imatch '(?si)<div class="etiGameDetails">.*<iframe.*src="(.+?)".*</iframe' | Out-Null
+                    $PlaycheckTemp -imatch '(?si)<div class="etiGameDetails">.+?<iframe.+?src="(.+?)".+?</iframe' | Out-Null
                     # URI will be in $Matches[1], Convert $amp; to & - required for Hacksaw URI to work
                     $ETIPlaycheckURI = $Matches[1] -replace "&amp;","&"
                     Write-Verbose ("[$(Get-Date)] ETI game detected! Playcheck URI: $ETIPlaycheckURI")
 
                     # Hacksaw or MGA ETI Games - insert link to replay video into the HTML
-                    If ($ETIPlaycheckURI -like '*hacksawgaming*' -or $ETIPlaycheckURI -like '*mgagamesmicrogaming*') {
+                    If ($ETIPlaycheckURI -like '*hacksawgaming*' -or $ETIPlaycheckURI -like '*mgagamesmicrogaming*' -or $ETIPlaycheckURI -like '*jellyentertainment*') {
                         Write-Verbose ("[$(Get-Date)] ETI game with video replay, will insert the video replay link into the playcheck")
                         $PlaycheckTemp = $PlaycheckTemp -replace '(?si)(<div class="etiGameDetails">.*<h2>Details</h2>)',$('$1<div><a href="' +
                         $ETIPlaycheckURI + '">A visual replay of this round is available. Click here to view.</a>')
@@ -352,7 +352,7 @@ function Get-QFPlayCheck {
                         
                         Write-Verbose ("[$(Get-Date)] Saving $Outfile as a PDF, attempt $i")
                         # Launch Edge and open the Playcheck temp file, save it as PDF
-                        Start-Process 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe' -Wait -argumentlist "--headless --no-sandbox --run-all-compositor-stages-before-draw --virtual-time-budget=30000 --proxy-bypass-list=* --proxy-server= --safe-mode --print-to-pdf=""$Outfile"" --no-pdf-header-footer --user-agent=""Mozilla/5.0 (Windows NT 10.0; Win64; x64)"" ""$TempFile""" -RedirectStandardOutput NUL
+                        Start-Process 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe' -Wait -argumentlist "--headless=old --no-sandbox --run-all-compositor-stages-before-draw --virtual-time-budget=30000 --proxy-bypass-list=* --proxy-server= --safe-mode --print-to-pdf=""$Outfile"" --no-pdf-header-footer --user-agent=""Mozilla/5.0 (Windows NT 10.0; Win64; x64)"" ""$TempFile""" -RedirectStandardOutput NUL
                         Start-Sleep $i
                         $i++
                     }
@@ -524,7 +524,7 @@ function Format-QFPlayCheck {
             # Call Edge to convert to PDF
             $Outfile = $SourceFile.trim() -replace  ("\..*$",".pdf")
             Write-Verbose ("[$(Get-Date)] Saving as a PDF - Filename: $OutFile")
-            Start-Process 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe' -wait -argumentlist "--headless --disable-gpu --no-sandbox --run-all-compositor-stages-before-draw --virtual-time-budget=30000 --proxy-bypass-list=* --proxy-server= --safe-mode --print-to-pdf=""$Outfile"" --no-pdf-header-footer ""$SourceFile"""
+            Start-Process 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe' -wait -argumentlist "--headless=old --disable-gpu --no-sandbox --run-all-compositor-stages-before-draw --virtual-time-budget=30000 --proxy-bypass-list=* --proxy-server= --safe-mode --print-to-pdf=""$Outfile"" --no-pdf-header-footer ""$SourceFile"""
 
             # try to delete the source MHTML file, attempt 10 times with 1 sec delay between each attempt
             $i = 1

@@ -2,7 +2,7 @@
 #                                                                             #
 #                         Quickfire Powershell Module                         #
 #                       Game Statistics Report Functions                      #
-#                                   v1.6.3                                    #
+#                                   v1.6.4                                   #
 #                                                                             #
 ###############################################################################
 
@@ -400,7 +400,7 @@ function Get-QFGameStats {
                     do {
                         Write-Verbose ("[$(Get-Date)] Saving $Outfile as a PDF, attempt $i")
                         # Launch Edge and open the Game Statistics Report temp file, and save it as a PDF
-                        Start-Process 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe' -Wait -argumentlist "--headless --no-sandbox --run-all-compositor-stages-before-draw --virtual-time-budget=30000 --proxy-bypass-list=* --proxy-server= --safe-mode --print-to-pdf=""$Outfile"" --no-pdf-header-footer ""$TempFile""" -RedirectStandardOutput NUL
+                        Start-Process 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe' -Wait -argumentlist "--headless=old --no-sandbox --run-all-compositor-stages-before-draw --virtual-time-budget=30000 --proxy-bypass-list=* --proxy-server= --safe-mode --print-to-pdf=""$Outfile"" --no-pdf-header-footer ""$TempFile""" -RedirectStandardOutput NUL
                         Start-Sleep $i
                         $i++
                     }

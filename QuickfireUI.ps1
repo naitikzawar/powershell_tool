@@ -1,4 +1,7 @@
-﻿Add-Type -AssemblyName System.Windows.Forms
+﻿#https://confluence.derivco.co.za/display/DE/ES+-+Quality+Gate+Reference
+#https://confluence.derivco.co.za/pages/viewpage.action?pageId=34571320
+
+Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 #\/\/\/\/download location here\/\/\/\/
 $PSFolderLocation = Join-Path $PSScriptRoot "MIGS-IT-QFPowershell"
@@ -24,12 +27,11 @@ catch {
     Grant-FullControl -Path $PSFolderLocation -User $currentUser
 }
 Import-Module $Quickfirepsd1
-#$GetGamesList = Invoke-RestMethod -Method 'Get' -uri "https://casinoportal.gameassists.co.uk/api/Games/List"
 $mainform = New-Object System.Windows.Forms.Form
 $Icon = Join-Path $PSScriptRoot "Derivco_logo.ico"
 $mainform.Icon = New-Object System.Drawing.Icon($Icon)
 $mainform.Text = "Derivco"
-$mainform.ClientSize = '700,500'
+$mainform.ClientSize = '900,500'
 $mainform.StartPosition = 'CenterScreen'
 $mainform.AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink
 
@@ -64,9 +66,10 @@ GICQF2CAS5.gic.mgsops.com,
 MALITQF1CAS5.mal.mgsops.com,
 MALQF1CAS5.mal.mgsops.com,
 MALQF2CAS5.mal.mgsops.com,
+MALQF3CAS5.mal.mgsops.com,
 MITQF1CAS5.mit.mgsops.com,
 MITQF2CAS5.mit.mgsops.com,
-MALQF3CAS5.mal.mgsops.com,
+MITQF3CAS5.mit.mgsops.com,
 CILQF1CAS1.cil.mgsops.com'
 
     $SDLayoutPanel1 = New-Object System.Windows.Forms.TableLayoutPanel -Property `
@@ -228,10 +231,98 @@ CILQF1CAS1.cil.mgsops.com'
     $TradSDPasswordsTab.Controls.Add($TradSDLayoutPanel2)
 
     ################## End of SD password tab
+    ################## Start of Vanguard passwords tab
+    $VanguardSDPasswordsTab = New-Object System.Windows.Forms.TabPage
+    $VanguardSDPasswordsTab.Text = "Vanguard Passwords"
+    $tabControl.TabPages.Add($VanguardSDPasswordsTab)
 
+    $VnaguardSDLayoutPanel1 = New-Object System.Windows.Forms.TableLayoutPanel -Property `
+    @{Location = New-Object System.Drawing.Point(30, 30); ColumnCount = 3; RowCount = 1; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink }
+
+    $VnaguardSDLayoutPanel2 = New-Object System.Windows.Forms.TableLayoutPanel -Property `
+    @{Location = New-Object System.Drawing.Point(30, 60); ColumnCount = 2; RowCount = 1; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink }
+
+    $VanguardSDPasswordButton = New-Object System.Windows.Forms.Button -Property @{ Autosize = $true; Text = 'Generate'; DialogResult = [System.Windows.Forms.DialogResult]::OK }
+    
+    $VanguardSDPasswordsReasonTxt = New-Object System.Windows.Forms.TextBox -Property @{ Size = New-Object System.Drawing.Size(160, 23); Text = 'Reason' }
+    
+    $VanguardSDPasswordResetButton = New-Object System.Windows.Forms.Button -Property  @{ AutoSize = $true; Text = 'Reset Tab'; DialogResult = [System.Windows.Forms.DialogResult]::OK }
+    
+    $VanguardList = 
+    'CILCNTCFG1.cil.mgsops.com,
+GICSH1VGDB5.gic.mgsops.com,
+MALIT1VGDB5.mal.mgsops.com,
+MALQF1VGDB5.mal.mgsops.com,
+MITSH1VGDB5.mit.mgsops.com,
+UATSH1VGDB5.ioa.mgsops.com'
+
+    $font = New-Object System.Drawing.Font("Arial", 12)
+
+    $VanguardDSBoxes = New-Object System.Windows.Forms.TextBox -Property `
+    @{ Multiline = $true; Size = New-Object System.Drawing.Size(300, 200); Font = $font; ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical; Text = $VanguardList }
+    
+    $VanguardSDPasswords = New-Object System.Windows.Forms.TextBox -Property `
+    @{Multiline = $true; Size = New-Object System.Drawing.Size(200, 200); Font = $font }
+
+    $VanguardSDPasswordResetButton.Add_Click({
+            $VanguardDSBoxes.Text = $VanguardList
+            $VanguardSDPasswordsReasonTxt.Text = 'Reason'
+            $mainform.DialogResult = [System.Windows.Forms.DialogResult]::None
+        })
+
+    $VanguardSDPasswordButton.Add_Click({
+            $VanguardSDPasswords.Text = ""
+            $VanguardDSBoxesText = $VanguardDSBoxes.Text
+            $VanguardDSBoxesText = $VanguardDSBoxesText.Split(',') | ForEach-Object { $_.Trim() }
+
+            foreach ($box in $VanguardDSBoxesText) {
+                [string]$SdUsername = 'sa'
+                [int]$SdPasswordType = 0
+                [string]$SdReason = $VanguardSDPasswordsReasonTxt.Text
+                [string]$SDURI = "https://sdapi.mgsops.net/ServerDetailsAPI.svc"
+
+                $Headers = @{ 'Content-Type' = 'text/xml'; "SOAPAction" = "http://tempuri.org/IServerDetailsApi/GetServerPassword" }
+
+                $Body = @"
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tem="http://tempuri.org/">
+        <soapenv:Header/>
+        <soapenv:Body>
+            <tem:GetServerPassword>
+                <!--Optional:-->
+                <tem:fqdn>$box</tem:fqdn>
+                <!--Optional:-->
+                <tem:username>$SdUsername</tem:username>
+                <!--Optional:-->
+                <tem:reason>$SdReason</tem:reason>
+                <!--Optional:-->
+                <tem:passwordType>$SdPasswordType</tem:passwordType>
+            </tem:GetServerPassword>
+        </soapenv:Body>
+        </soapenv:Envelope>
+"@
+
+                $VanguardDBPassword = Invoke-RestMethod -Uri "$SDURI/ServerDetailsHttpsAPI.svc" -Method 'POST' -Headers $Headers -Body $Body -UseDefaultCredentials -UseBasicParsing
+                $VanguardDBPassword.Envelope.body.GetServerPasswordResponse.GetServerPasswordResult
+                $VanguardSDPasswords.Text += $VanguardDBPassword.Envelope.body.GetServerPasswordResponse.GetServerPasswordResult += "`r`n"
+
+                $mainform.DialogResult = [System.Windows.Forms.DialogResult]::None
+            }
+            $VanguardSDPasswords.Text += "`r`n" + $VanguardSDPasswordsReasonTxt.Text
+        })
+
+    $VnaguardSDLayoutPanel1.Controls.Add($VanguardSDPasswordButton)
+    $VnaguardSDLayoutPanel1.Controls.Add($VanguardSDPasswordsReasonTxt)
+    $VnaguardSDLayoutPanel1.Controls.Add($VanguardSDPasswordResetButton)
+
+    $VnaguardSDLayoutPanel2.Controls.Add($VanguardDSBoxes)
+    $VnaguardSDLayoutPanel2.Controls.Add($VanguardSDPasswords)
+
+    $VanguardSDPasswordsTab.Controls.Add($VnaguardSDLayoutPanel1)
+    $VanguardSDPasswordsTab.Controls.Add($VnaguardSDLayoutPanel2)
+    ################## End of Vanguard passwords tab
     ################## Start of vanguard transaction audit tab
     $VanguardState = New-Object System.Windows.Forms.TabPage
-    $VanguardState.Text = "Player transaction audit"
+    $VanguardState.Text = "Transaction Audit"
 
     $TransactionAuditLayoutPanel1 = New-Object System.Windows.Forms.TableLayoutPanel -Property `
     @{Location = New-Object System.Drawing.Point(30, 30); ColumnCount = 7; RowCount = 2; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink }
@@ -240,7 +331,7 @@ CILQF1CAS1.cil.mgsops.com'
     @{Location = New-Object System.Drawing.Point(30, 90); ColumnCount = 4; RowCount = 2; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink }
 
     $TransactionAuditLayoutPanel3 = New-Object System.Windows.Forms.TableLayoutPanel -Property `
-    @{Location = New-Object System.Drawing.Point(30, 150); ColumnCount = 4; RowCount = 1; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink }
+    @{Location = New-Object System.Drawing.Point(30, 150); ColumnCount = 5; RowCount = 1; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink }
 
     $UserID = New-Object System.Windows.Forms.TextBox -Property @{ Text = "UserID" }
     $CasinoID = New-Object System.Windows.Forms.TextBox -Property @{ Text = "CasinoID" }
@@ -268,9 +359,9 @@ CILQF1CAS1.cil.mgsops.com'
     $ResetTab = New-Object System.Windows.Forms.Button -Property @{ Width = 90; Text = "Reset Tab" }
     $ExportExcel = New-Object System.Windows.Forms.Button -Property @{ AutoSize = $true; Text = "Export to Excel"; Name = "ExportExcel" }
     $ExportExcelLbl = New-Object System.Windows.Forms.Label -Property @{ AutoSize = $true; Text = ""; Name = "ExportExcelLbl" }
-    $NameExcelChkBx = New-Object System.Windows.Forms.CheckBox -Property @{Text = "Name Document?"; AutoSize = $true; Name = "NameExcelChkBx" }
+    $AuditNameExcelChkBx = New-Object System.Windows.Forms.CheckBox -Property @{Text = "Name audit?"; AutoSize = $true; Name = "NameExcelChkBx" }
     $OpenExcelChkBx = New-Object System.Windows.Forms.CheckBox -Property @{Text = "Open export location?"; AutoSize = $true; Name = "OpenExcelChkBx" }
-    $NameExcelChkBxTxt = New-Object System.Windows.Forms.TextBox -Property @{Text = "Document Name"; Name = "NameExcelChkBxTxt" }
+    $NameExcelChkBxTxt = New-Object System.Windows.Forms.TextBox -Property @{Text = "Document name"; Name = "NameExcelChkBxTxt" }
     $ModuleIDTxtBx = New-Object System.Windows.Forms.TextBox -Property @{Text = "Module ID"; Name = "ModuleIDTxt" }
     $ModuleIDChkBx = New-Object System.Windows.Forms.CheckBox -Property @{Text = "Search by Module ID?"; Name = "ModuleIDChk"; AutoSize = $true }
 
@@ -315,7 +406,7 @@ CILQF1CAS1.cil.mgsops.com'
                 $OP_Token = Get-QFOperatorToken -APIKey $OP_key[0].APIKey
                 $startDate = $formattedStartTime
                 $EndtDate = $formattedEndTime
-                if ($NameExcelChkBx.Checked -eq $true) {
+                if ($AuditNameExcelChkBx.Checked -eq $true) {
                     
                     $fileName = $NameExcelChkBxTxt.Text.Trim() + ".xlsx"
                     if ($ModuleIDChkBx.Checked -eq $true) {
@@ -406,11 +497,24 @@ CILQF1CAS1.cil.mgsops.com'
             $combinedEndTime = New-Object DateTime -ArgumentList @( $EndTimeValue.Year, $EndTimeValue.Month, $EndTimeValue.Day, $EndTimePickerValue.Hour, $EndTimePickerValue.Minute, 0)
             $formattedEndTime = $combinedEndTime.ToString("yyyy-MM-ddTHH:mm:ssK")
 
-            $OP_Key = Get-QFOperatorAPIKeys -OperatorID $GetOperatorFromCasino.operatorID
+            try {
+                $OP_Key = Get-QFOperatorAPIKeys -OperatorID $GetOperatorFromCasino.operatorID
+                write-host "OP_Key "$OP_Key
+            }
+            catch {
+                $GetAuditLbl.Text = "Failed to fetch operator bearer token, please try again"
+                return
+            }
             $OP_Token = Get-QFOperatorToken -APIKey $OP_key[0].APIKey
+            
 
             if ($formattedEndTime -lt $formattedStartTime) {
                 $GetAuditLbl.Text = "Older date must be older"
+                return
+            }
+
+            if ($formattedEndTime -eq $formattedStartTime) {
+                $GetAuditLbl.Text = "Entered dates cannot be the same"
                 return
             }
 
@@ -436,47 +540,62 @@ CILQF1CAS1.cil.mgsops.com'
 
             foreach ($column in $columns) { $dataTable.Columns.Add($column) }
         
-            $A = @()
+            if ($null -eq $AuditData) {
+                $GetAuditLbl.Text = "No gameplay found for date range"
+            }
+            else {
 
-            foreach ($tran in $AuditData) {
-                $tranMember = $tran | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name
-                foreach ($item in $tranMember) {
-                    $itemValue = $tran.$item
-                    $A += $itemValue
-                }
-                $dataTable.Rows.Add($A[0], $A[1], $A[2], $A[3], $A[4], $A[5], $A[6], $A[7], $A[8], $A[9], $A[10], $A[11], $A[12], $A[13], $A[14], $A[15], $A[16], $A[17]);
                 $A = @()
-            }
 
-            $dataGridView.Width = 600
-            $dataGridView.Height = 200
-            $dataGridView.DataSource = $dataTable
+                foreach ($tran in $AuditData) {
+                    $tranMember = $tran | Get-Member -MemberType NoteProperty | Select-Object -ExpandProperty Name
+                    foreach ($item in $tranMember) {
+                        $itemValue = $tran.$item
+                        $A += $itemValue
+                    }
+                    $dataTable.Rows.Add($A[0], $A[1], $A[2], $A[3], $A[4], $A[5], $A[6], $A[7], $A[8], $A[9], $A[10], $A[11], $A[12], $A[13], $A[14], $A[15], $A[16], $A[17]);
+                    $A = @()
+                }
 
-            $TransactionAuditLayoutPanel4 = New-Object System.Windows.Forms.TableLayoutPanel -Property `
-            @{Location = New-Object System.Drawing.Point(30, 190); ColumnCount = 1; RowCount = 1; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink; `
-                    Name = "TransactionAuditLayoutPanel4"
-            }
+                $dataGridView.Width = 600
+                $dataGridView.Height = 200
+                $dataGridView.DataSource = $dataTable
 
-            $TransactionAuditLayoutPanel5 = New-Object System.Windows.Forms.TableLayoutPanel -Property `
-            @{Location = New-Object System.Drawing.Point(30, 410); ColumnCount = 5; RowCount = 1; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink; `
-                    Name = "TransactionAuditLayoutPanel5"
-            }
+                $TransactionAuditLayoutPanel4 = New-Object System.Windows.Forms.TableLayoutPanel -Property `
+                @{Location = New-Object System.Drawing.Point(30, 190); ColumnCount = 1; RowCount = 1; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink; `
+                        Name = "TransactionAuditLayoutPanel4"
+                }
 
-            $TransactionAuditLayoutPanel4.Controls.Add($dataGridView, 0, 0)
-            $VanguardState.Controls.Add($TransactionAuditLayoutPanel4)
+                $TransactionAuditLayoutPanel5 = New-Object System.Windows.Forms.TableLayoutPanel -Property `
+                @{Location = New-Object System.Drawing.Point(30, 410); ColumnCount = 5; RowCount = 1; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink; `
+                        Name = "TransactionAuditLayoutPanel5"
+                }
 
-            $TransactionAuditLayoutPanel5.Controls.Add($ExportExcel, 3, 0)
-            $TransactionAuditLayoutPanel5.Controls.Add($ExportExcelLbl, 4, 0)
-            $TransactionAuditLayoutPanel5.Controls.Add($NameExcelChkBx, 0, 0)
-            $TransactionAuditLayoutPanel5.Controls.Add($NameExcelChkBxTxt, 1, 0)
-            $TransactionAuditLayoutPanel5.Controls.Add($OpenExcelChkBx, 2, 0)
-            $VanguardState.Controls.Add($TransactionAuditLayoutPanel5)
+                $TransactionAuditLayoutPanel4.Controls.Add($dataGridView, 0, 0)
+                $VanguardState.Controls.Add($TransactionAuditLayoutPanel4)
+
+                $TransactionAuditLayoutPanel5.Controls.Add($AuditNameExcelChkBx, 0, 0)
+                $TransactionAuditLayoutPanel5.Controls.Add($NameExcelChkBxTxt, 1, 0)
+                $TransactionAuditLayoutPanel5.Controls.Add($OpenExcelChkBx, 2, 0)
+                $TransactionAuditLayoutPanel5.Controls.Add($ExportExcel, 3, 0)
+                $TransactionAuditLayoutPanel5.Controls.Add($ExportExcelLbl, 4, 0)
+                $VanguardState.Controls.Add($TransactionAuditLayoutPanel5)
+
+                $TransactionAuditLayoutPanel5.Controls | Where-Object { $_ -is [System.Windows.Forms.TextBox] } | ForEach-Object {
+                    $_.Add_MouseClick({ $this.Text = "" })
+                }
             
-
-            $GetAuditLbl.Text = "Complete!"
-            $GetAuditLbl.Refresh()
-            $VanguardState.Refresh()
+                $GetAuditLbl.Text = "Complete! Please wait for results to appear"
+                $GetAuditLbl.Refresh()
+                $VanguardState.Refresh()
+            }
         })
+        
+
+    $TransactionAuditLayoutPanel1.Controls | Where-Object { $_ -is [System.Windows.Forms.TextBox] } | ForEach-Object {
+        $_.Add_MouseClick({ $this.Text = "" })
+    }
+        
     ################## End of vanguard transaction audit tab
 
     ################## Start of lookup player tab
@@ -490,24 +609,26 @@ CILQF1CAS1.cil.mgsops.com'
     $QFPlayerLookupLayoutPanel2 = New-Object System.Windows.Forms.TableLayoutPanel -Property `
     @{Location = New-Object System.Drawing.Point(30, 60); ColumnCount = 4; RowCount = 1; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink }
 
-    $PlayerSearchTerm = New-Object System.Windows.Forms.TextBox -Property @{Text = "Login Name"; Width = 100 }
+    $PlayerSearchTerm = New-Object System.Windows.Forms.TextBox -Property @{Text = "Login Name"; Width = 300 }
     $PlayerSearchOperatorID = New-Object System.Windows.Forms.TextBox -Property @{Text = "Operator ID"; Width = 100 }
     $PlayerSearchButton = New-Object System.Windows.Forms.Button -Property @{Text = "Search player"; AutoSize = $true }
     $PlayerSearchingLbl = New-Object System.WIndows.Forms.Label -Property @{AutoSize = $true }
     $ClearPlayer = New-Object System.Windows.Forms.Button -Property @{Text = "Clear Results"; AutoSize = $true }
     $PlayerSearchResetTab = New-Object System.Windows.Forms.Button -Property @{Text = "Reset Tab"; AutoSize = $true }
 
-    $QFPlayerLookupLayoutPanel1.Controls.Add($PlayerSearchTerm, 0, 0)
-    $QFPlayerLookupLayoutPanel1.Controls.Add($PlayerSearchOperatorID, 1, 0)
+    $controlsLayoutPanel1 = @( @{ Control = $PlayerSearchTerm; Column = 0; Row = 0 }, @{ Control = $PlayerSearchOperatorID; Column = 1; Row = 0 } )
+    foreach ($item in $controlsLayoutPanel1) { $QFPlayerLookupLayoutPanel1.Controls.Add($item.Control, $item.Column, $item.Row) }
     $QFPlayerLookup.Controls.Add($QFPlayerLookupLayoutPanel1)
 
-    $QFPlayerLookupLayoutPanel2.Controls.Add($PlayerSearchButton, 0, 0)
-    $QFPlayerLookupLayoutPanel2.Controls.Add($ClearPlayer, 1, 0)
-    $QFPlayerLookupLayoutPanel2.Controls.Add($PlayerSearchResetTab, 2, 0)
-    $QFPlayerLookupLayoutPanel2.Controls.Add($PlayerSearchingLbl, 3, 0)
-    $QFPlayerLookup.Controls.Add($QFPlayerLookupLayoutPanel2)
+    ####
+    $controlsLayoutPanel2 = @( 
+        @{ Control = $PlayerSearchButton; Column = 0; Row = 0 }, @{ Control = $ClearPlayer; Column = 1; Row = 0 }, @{ Control = $PlayerSearchResetTab; Column = 2; Row = 0 }, @{ Control = $PlayerSearchingLbl; Column = 3; Row = 0 }
+    )
     
-
+    foreach ($item in $controlsLayoutPanel2) { $QFPlayerLookupLayoutPanel2.Controls.Add($item.Control, $item.Column, $item.Row) }
+    
+    $QFPlayerLookup.Controls.Add($QFPlayerLookupLayoutPanel2)
+    ######
     $PlayerSearchResetTab.Add_Click({
             $PlayerSearchTerm.Text = "Login Name"
             $PlayerSearchOperatorID.Text = "Operator ID"
@@ -550,17 +671,30 @@ CILQF1CAS1.cil.mgsops.com'
     
                 $UserSearchLoginBody = @{ 
                     "loginName" = "alex.bowker@derivco.co.im"
-                    "password"  = "pas$\/\/o7d6" 
+                    "password"  = "P@55w0rD$" 
                 }
                 $PlayerSearchingLbl.Text = "Logging in"
-                $LoginResult = Invoke-RestMethod -Method 'Post' -uri "https://quickfireapp.gameassists.co.uk/Framework/api/Security/Login" -Body $UserSearchLoginBody
+                try {
+                    $LoginResult = Invoke-RestMethod -Method 'Post' -uri "https://quickfireapp.gameassists.co.uk/Framework/api/Security/Login" -Body $UserSearchLoginBody
+                }
+                catch {
+                    write-host $_
+                    $PlayerSearchingLbl.Text = "Operator not mapped"
+                    return
+                }
+                
                 $InitialSesstionToken = $LoginResult.sessionToken
 
                 $PlayerSearchingLbl.Text = "Swapping operator"
                 SwitchUser -Token $InitialSesstionToken -OperatorID $PlayerSearchOperatorID.Text.Trim()
 
                 $PlayerSearchingLbl.Text = "Logging in"
-                $LoginResult = Invoke-RestMethod -Method 'Post' -uri "https://quickfireapp.gameassists.co.uk/Framework/api/Security/Login" -Body $UserSearchLoginBody
+                try {
+                    $LoginResult = Invoke-RestMethod -Method 'Post' -uri "https://quickfireapp.gameassists.co.uk/Framework/api/Security/Login" -Body $UserSearchLoginBody
+                }
+                catch {
+                    $PlayerSearchingLbl.Text = "Operator not mapped"
+                }
                 $NewSesstionToken = $LoginResult.sessionToken
     
                 $NewSessionLogin = @{ "Authorization" = "UserSession " + $NewSesstionToken }
@@ -588,7 +722,7 @@ CILQF1CAS1.cil.mgsops.com'
                 }
                     
                 if ($productIDs.Length -eq 0) {
-                    $PlayerSearchingLbl.Text = "No player located or operator not mapped"
+                    $PlayerSearchingLbl.Text = "No player located"
                 }
                 else {
                     $prefixes = Invoke-QFPortalRequest -CasinoID $productIDs
@@ -605,6 +739,14 @@ CILQF1CAS1.cil.mgsops.com'
                 
             }
         })
+
+    $QFPlayerLookupLayoutPanel1.Controls | Where-Object { $_ -is [System.Windows.Forms.TextBox] } | ForEach-Object {
+        $_.Add_MouseClick({ $this.Text = "" })
+    }
+
+    $QFPlayerLookupLayoutPanel2.Controls | Where-Object { $_ -is [System.Windows.Forms.TextBox] } | ForEach-Object {
+        $_.Add_MouseClick({ $this.Text = "" })
+    }
     ################## End of lookup player tab
 
     ################## Start of playcheck tab
@@ -615,6 +757,8 @@ CILQF1CAS1.cil.mgsops.com'
     $PSServerTxt = New-Object System.Windows.Forms.TextBox -Property @{ Text = "Server ID"; Location = New-Object System.Drawing.Point(30, 30); Width = 100; }
     $PSUserLoginTxt = New-Object System.Windows.Forms.TextBox -Property @{Text = "Player login"; Location = New-Object System.Drawing.Point(140, 30); Width = 300; }
     $PSUserTransTxt = New-Object System.Windows.Forms.TextBox -Property @{Text = "Trans IDs (123,234,345)"; Location = New-Object System.Drawing.Point(30, 60); Width = 300; }
+    $PSUserTransBatchingOptionTxt = New-Object System.Windows.Forms.TextBox -Property @{Text = "Transactions to process, default is all"; Location = New-Object System.Drawing.Point(350, 60); Width = 200; }
+    $PSUserTransBatchingLbl = New-Object System.WIndows.Forms.Label -Property @{Text = "- Left-most transaction is number 0"; Location = New-Object System.Drawing.Point(560, 60); AutoSize = $true }
     $PSOpenExplorer = New-Object System.Windows.Forms.CheckBox -Property @{Text = "Open in explorer"; Location = New-Object System.Drawing.Point(30, 90); AutoSize = $true }
     $PSPDFName = New-Object System.Windows.Forms.CheckBox -Property @{Text = "Name PDF?"; Location = New-Object System.Drawing.Point(150, 90); Width = 90 }
     $PSPDFNameTxt = New-Object System.Windows.Forms.TextBox -Property @{Text = "PDF name"; Location = New-Object System.Drawing.Point(250, 90); Width = 250 }
@@ -622,6 +766,10 @@ CILQF1CAS1.cil.mgsops.com'
     $PSGetPlaycheckResetTab = New-Object System.Windows.Forms.Button -Property @{Text = "Reset Tab"; Location = New-Object System.Drawing.Point(150, 120); AutoSize = $true }
     $PSOutputTxtArea = New-Object System.Windows.Forms.TextBox -Property @{Multiline = $true; Location = New-Object System.Drawing.Point(30, 160); Width = 630; Height = 300; Name = "PSOutputTxtArea" }
     
+    $PSServerTxt.Add_MouseClick({ $this.text = "" })
+    $PSUserLoginTxt.Add_MouseClick({ $this.text = "" })
+    $PSUserTransTxt.Add_MouseClick({ $this.text = "" })
+    $PSPDFNameTxt.Add_MouseClick({ $this.text = "" })
 
     $PSGetPlaycheckResetTab.Add_Click({
             $playcheck.Refresh()
@@ -632,6 +780,7 @@ CILQF1CAS1.cil.mgsops.com'
             $PSPDFName.Checked = $false
             $PSOpenExplorer.Checked = $false
             $controlsToRemove = @()
+            $PSUserTransBatchingOptionTxt.Text = "Transactions to process, default is all"
         })
 
     $PSGetPlaycheckButton.Add_Click({
@@ -643,23 +792,59 @@ CILQF1CAS1.cil.mgsops.com'
         
             function CheckPlaycheckSaved {
                 param( [string]$TestPath, [string]$TransactionNo)
-                write-host $TestPath
                 if ($TestPath -like "*\") {
                     $PSOutputTxtArea.Text += "Unable to generate PDF for transaction $TransactionNo `r`n"
                 }
                 else {
                     if (Test-Path -Path $TestPath) {
-                        $PSOutputTxtArea.Text += "Complete!, Saved here: $TestPath `r`n"
+                        $PSOutputTxtArea.Text += "Complete!, saved here: $TestPath `r`n"
                     }
                     else {
                         $PSOutputTxtArea.Text += "Unable to generate PDF for transaction $TransactionNo `r`n"
                     }
                 }
             }
+            $SpecificTransactionArrayIndexes = @()
+            $SpecificTransactionArray = @()
 
+            if ($PSUserTransBatchingOptionTxt.Text.Substring(0, 1) -ne "T") {
+                try {
+                    write-host
+                    $SpecificTransactionArrayIndexes = $PSUserTransBatchingOptionTxt.Text -split ',' | ForEach-Object { 
+                        if (-not [int]::TryParse($_, [ref]$null)) {
+                            throw "Invalid selection"
+                        }
+                        [int]$_ 
+                    }
+                }
+                catch {
+                    $PSUserTransBatchingOptionTxt.Text = "Invalid selection"
+                    return
+                }
+
+                $invalidIndexes = @()
+                foreach ($index in $SpecificTransactionArrayIndexes) {
+                    if ($index -ge 0 -and $index -lt $PSUserTransArr.Count) {
+                        $SpecificTransactionArray += $PSUserTransArr[$index]
+                    }
+                    else {
+                        $invalidIndexes += $index
+                    }
+                }
+
+                if ($invalidIndexes.Count -gt 0) {
+                    $PSOutputTxtArea.Text += "Index $invalidIndexes is invalid `r`n"
+                }
+
+                $PSUserTransArr = $SpecificTransactionArray
+            }
+            
             foreach ($Transaction in $PSUserTransArr) {
+                $autoPlaycheckName = "PlayCheck $Transaction.pdf"
                 $userDefinedPlaycheckName = "$($PSPDFNameTxt.Text)_$Transaction.pdf"
                 $userDefinedPlaycheckNameFilePath = Join-Path -Path $PSScriptRoot -ChildPath $userDefinedPlaycheckName
+                $autoPlaycheckNameFilePath = Join-Path -Path $PSScriptRoot -ChildPath $autoPlaycheckName
+
                 #Name PDF
                 if ($PSPDFName.Checked -eq $true -and $PSOpenExplorer.Checked -eq $false) {
                     $PSOutputTxtArea.Text += "Now processing transaction $Transaction `r`n"
@@ -671,12 +856,12 @@ CILQF1CAS1.cil.mgsops.com'
                     if ($Transaction -eq $PSUserTransArr[$PSUserTransArr.Count - 1]) {
                         $PSOutputTxtArea.Text += "Now processing transaction $Transaction `r`n"
                         Get-QFPlayCheck -Login $PSUserLoginTxt.Text.Trim() -CasinoID $PSServerTxt.Text.Trim() -TransID $Transaction -SavePDF -OpenExplorer
-                        CheckPlaycheckSaved -TestPath $userDefinedPlaycheckNameFilePath -TransactionNo $Transaction
+                        CheckPlaycheckSaved -TestPath $autoPlaycheckNameFilePath -TransactionNo $Transaction
                     }
                     else {
                         $PSOutputTxtArea.Text += "Now processing transaction $Transaction `r`n"
                         Get-QFPlayCheck -Login $PSUserLoginTxt.Text.Trim() -CasinoID $PSServerTxt.Text.Trim() -TransID $Transaction -SavePDF
-                        CheckPlaycheckSaved -TestPath $userDefinedPlaycheckNameFilePath -TransactionNo $Transaction
+                        CheckPlaycheckSaved -TestPath $autoPlaycheckNameFilePath -TransactionNo $Transaction
                     }
                 }
                 #Open in explorer & name the PDF
@@ -687,7 +872,7 @@ CILQF1CAS1.cil.mgsops.com'
                         CheckPlaycheckSaved -TestPath $userDefinedPlaycheckNameFilePath -TransactionNo $Transaction
                     }
                     else {
-                        $PSOutputTxtArea.Text += "Now processing transaction $Transaction"
+                        $PSOutputTxtArea.Text += "Now processing transaction $Transaction `r`n"
                         Get-QFPlayCheck -Login $PSUserLoginTxt.Text.Trim() -CasinoID $PSServerTxt.Text.Trim() -TransID $Transaction -SavePDF -FileName $PSPDFNameTxt.Text.Trim()
                         CheckPlaycheckSaved -TestPath $userDefinedPlaycheckNameFilePath -TransactionNo $Transaction
                     }
@@ -695,27 +880,253 @@ CILQF1CAS1.cil.mgsops.com'
                 #neither open in explorer or name PDF
                 if ($PSOpenExplorer.Checked -eq $false -and $PSPDFName.Checked -eq $false) {
                     $PSOutputTxtArea.Text += "Now processing transaction $Transaction `r`n"
-                    $autoPlaycheckName = "PlayCheck $Transaction.pdf"
-
                     Get-QFPlayCheck -Login $PSUserLoginTxt.Text.Trim() -CasinoID $PSServerTxt.Text.Trim() -TransID $Transaction -SavePDF
-                    
                     $autoPlaycheckNameFilePath = Join-Path -Path $PSScriptRoot -ChildPath $autoPlaycheckName
-                    if (Test-Path -Path $autoPlaycheckNameFilePath) {
-                        $PSOutputTxtArea.Text += "Complete! `r`n"
-                    }
-                    else {
-                        $PSOutputTxtArea.Text += "Error retrieving playcheck for transaction $Transaction) `r`n"
-                    }
+                    CheckPlaycheckSaved -TestPath $autoPlaycheckNameFilePath -TransactionNo $Transaction
                 
                 }
             }
             $PSOutputTxtArea.Text += "All transactions processed"
         })
-    $playcheckControls = $PSServerTxt, $PSUserLoginTxt, $PSUserTransTxt, $PSOpenExplorer, $PSPDFName, $PSPDFNameTxt, $PSGetPlaycheckButton, $PSGetPlaycheckResetTab
+    $playcheckControls = $PSServerTxt, $PSUserLoginTxt, $PSUserTransTxt, $PSOpenExplorer, $PSPDFName, $PSPDFNameTxt, $PSGetPlaycheckButton, $PSGetPlaycheckResetTab, $PSUserTransBatchingOptionTxt, $PSUserTransBatchingLbl
 
     foreach ($control in $playcheckControls) { $playcheck.Controls.Add($control) }
 
     ################## End of playcheck tab
+    ################## Start of player incomplete bet tab
+    $incompleteBetTab = New-Object System.Windows.Forms.TabPage
+    $incompleteBetTab.Text = "Incomplete bets"
+
+    $PlayerInfoLayoutPanel = New-Object System.Windows.Forms.TableLayoutPanel -Property `
+    @{Location = New-Object System.Drawing.Point(30, 30); ColumnCount = 5; RowCount = 1; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink }
+
+    $ExportResultLayoutPanel = New-Object System.Windows.Forms.TableLayoutPanel -Property `
+    @{Location = New-Object System.Drawing.Point(30, 70); ColumnCount = 5; RowCount = 1; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink; Name = "ExportResultLayoutPanel" }
+
+    $CommitQueueLayoutPanel = New-Object System.Windows.Forms.TableLayoutPanel -Property `
+    @{Location = New-Object System.Drawing.Point(30, 100); ColumnCount = 3; RowCount = 2; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink; Name = "CommitQueueLayoutPanel" }
+
+    $RollbackQueueLayoutPanel = New-Object System.Windows.Forms.TableLayoutPanel -Property `
+    @{Location = New-Object System.Drawing.Point(30, 230); ColumnCount = 3; RowCount = 2; Autosize = $true; AutoSizeMode = [System.Windows.Forms.AutoSizeMode]::GrowAndShrink; Name = "RollbackQueueLayoutPanel" }
+
+    $ServerTxtBx = New-Object System.Windows.Forms.TextBox -Property @{ Text = "Casino ID"; }
+    $UserIDTxtBx = New-Object System.Windows.Forms.TextBox -Property @{Text = "User ID"; }
+    $GetQueueButton = New-Object System.Windows.Forms.Button -Property @{Text = "Fetch queues"; AutoSize = $true }
+    $ResetTabButton = New-Object System.Windows.Forms.Button -Property @{Text = "Reset tab"; AutoSize = $true }
+    $CommitQueueLbl = New-Object System.Windows.Forms.Label -Property @{Text = "Commit queue"; AutoSize = $true }
+    $RollbackQueueLbl = New-Object System.Windows.Forms.Label -Property @{Text = "Rollback queue"; AutoSize = $true }
+    $QueueStatusLbl = New-Object System.Windows.Forms.Label -Property @{Text = ""; AutoSize = $true }
+    $ClearQueueResultsBtn = New-Object System.Windows.Forms.Button -Property @{Text = "Clear results"; Name = "ClearQueueResultsBtn" }
+    $IncompleteBetNameExcelChkBx = New-Object System.Windows.Forms.CheckBox -Property @{Text = "Name export?"; Name = "IncompleteBetNameExcelChkBx" }
+    $NameExcelTxtBx = New-Object System.Windows.Forms.TextBox -Property @{ Text = "document name"; Width = 150; Name = "NameExcelTxtBx" }
+    $ExportQueueResultsBtn = New-Object SYstem.Windows.Forms.Button -Property @{Text = "Export results"; Width = 100; Name = "ExportQueueResultsBtn" }
+    $ExportQueueResultsLbl = New-Object System.Windows.Forms.Label -Property @{Text = "" }
+
+    $commitQueueGridView = New-Object System.Windows.Forms.DataGridView -Property `
+    @{ScrollBars = [System.Windows.Forms.ScrollBars]::Both; Width = 630; Height = 200; AutoSizeColumnsMode = [System.Windows.Forms.DataGridViewAutoSizeColumnsMode]::AllCells }
+    $rollbackQueueGridView = New-Object System.Windows.Forms.DataGridView -Property `
+    @{ScrollBars = [System.Windows.Forms.ScrollBars]::Both; Width = 630; Height = 200; AutoSizeColumnsMode = [System.Windows.Forms.DataGridViewAutoSizeColumnsMode]::AllCells }
+            
+    $orderedKeysRollback = @("rowId", "externalReference", "loginName", "transactionNumber", "betReference", "refundAmount", "gameName", "currency", "dateCreated", "freeGameOffer", "productId", "productName", "userId")
+    $orderedKeysCommit = @("rowId", "externalReference", "loginName", "transactionNumber", "winReference", "winAmount", "gameName", "currency", "dateCreated", "progressiveWin", "progressiveDescription", "productId", "productName", "userId", "freeGameOffer")
+            
+
+    $PlayerInfoLayoutPanel.Controls.Add($ServerTxtBx, 0, 0)
+    $PlayerInfoLayoutPanel.Controls.Add($UserIDTxtBx, 1, 0)
+    $PlayerInfoLayoutPanel.Controls.Add($GetQueueButton, 2, 0)
+    $PlayerInfoLayoutPanel.Controls.Add($ResetTabButton, 3, 0)
+    $PlayerInfoLayoutPanel.Controls.Add($QueueStatusLbl, 4, 0)
+    $incompleteBetTab.Controls.Add($PlayerInfoLayoutPanel)
+
+    $PlayerInfoLayoutPanel.Controls | Where-Object { $_ -is [System.Windows.Forms.TextBox] } | ForEach-Object {
+        $_.Add_MouseClick({ $this.Text = "" })
+    }
+
+    $global:commitQueue = @()
+    $global:rollbackQueue = @()
+    $global:commitQueueExcel = ""
+    $global:rollbackQueueExcel = ""
+
+    $ClearQueueResultsBtn.Add_Click({
+            $incompleteBetTab.Refresh()
+            $QueueStatusLbl.Text = ""
+            $controlNames = @("CommitQueueLayoutPanel", "RollbackQueueLayoutPanel", "ExportResultLayoutPanel")
+
+            for ($i = $incompleteBetTab.Controls.Count - 1; $i -ge 0; $i--) {
+                $control = $incompleteBetTab.Controls[$i]
+                if ($control.Name -in $controlNames) {
+                    $incompleteBetTab.Controls.Remove($control)
+                }
+            }
+        })
+
+    $ResetTabButton.Add_Click({
+            $ServerTxtBx.Text = "Casino ID"
+            $UserIDTxtBx.Text = "User ID"
+        })
+
+    $ExportQueueResultsBtn.Add_Click({
+            $ExportQueueResultsLbl.Text = "Processing"
+            $Commit = 0
+            $ExcelName = $NameExcelTxtBx.Text.Trim()
+            $UserIDTxtBxTEXT = $UserIDTxtBx.Text
+            if ($IncompleteBetNameExcelChkBx.Checked -eq $true) {
+                if ($commitQueueExcel.Count -gt 0) {
+                    $Commit = 1
+                    Export-QFExcel -ExcelData $commitQueueExcel -ExcelTemplate $null -ExcelFileName "$ExcelName.xlsx" -ExcelDestWorksheetName "Commit Queue" -StartRow 1
+                }
+                if ($rollbackQueueExcel[0]) {
+                    if ($Commit -eq 1) {
+                        Export-QFExcel -ExcelData $rollbackQueueExcel -ExcelTemplate $null -ExcelSourceWorksheetName "$ExcelName.xlsx" -ExcelDestWorksheetName "Rollback Queue" -StartRow 1
+                    }
+                    else {
+                        Export-QFExcel -ExcelData $rollbackQueueExcel -ExcelTemplate $null -ExcelFileName "$ExcelName.xlsx" -ExcelDestWorksheetName "Rollback Queue" -StartRow 1
+                    }
+                }
+            }
+            else {
+                if ($commitQueueExcel.Count -gt 0) {
+                    $Commit = 1
+                    Export-QFExcel -ExcelData $commitQueueExcel -ExcelTemplate $null -ExcelFileName "$UserIDTxtBxTEXT Incomplete Transactions.xlsx" -ExcelDestWorksheetName "Commit Queue" -StartRow 1
+                }
+                if ($rollbackQueueExcel.Count -gt 0) {
+                    if ($Commit -eq 1) {
+                        Export-QFExcel -ExcelData $rollbackQueueExcel -ExcelTemplate $null -ExcelSourceWorksheetName "$UserIDTxtBxTEXT Incomplete Transactions.xlsx" -ExcelDestWorksheetName "Rollback Queue" -StartRow 1
+                    }
+                    else {
+                        Export-QFExcel -ExcelData $rollbackQueueExcel -ExcelTemplate $null -ExcelFileName "$UserIDTxtBxTEXT Incomplete Transactions.xlsx" -ExcelDestWorksheetName "Rollback Queue" -StartRow 1
+                    }
+                }
+            }
+            $ExportQueueResultsLbl.Text = "Complete!"
+            explorer.exe (Get-Location).path 
+        })
+
+    $GetQueueButton.Add_Click({
+            $commitQueueDataTable = New-Object System.Data.DataTable
+            $rollbackQueueDataTable = New-Object System.Data.DataTable
+            $QueueStatusLbl.Text = "Processing"
+            $global:commitQueue = @()
+            $global:rollbackQueue = @()
+            $casinoID = $ServerTxtBx.Text.Trim()
+            $userID = $UserIDTxtBx.Text.Trim()
+
+            $commitTableHasHeaders = 1
+            if ($commitQueueDataTable.Columns.Count -eq 0) {
+                $commitTableHasHeaders = 0
+            }
+
+            $rollbackTableHasHeaders = 1
+            if ($rollbackQueueDataTable.Columns.Count -eq 0) {
+                $rollbackTableHasHeaders = 0
+            }
+
+            $GetOperatorFromCasino = Invoke-QFPortalRequest -CasinoID $casinoID
+            $OP_Key = Get-QFOperatorAPIKeys -OperatorID $GetOperatorFromCasino.operatorID
+            $OP_Token = Get-QFOperatorToken -APIKey $OP_key[0].APIKey
+
+            #get player queue data
+            $QueueStatusLbl.Text = "Fetching incomplete bets"
+            $Queue = Invoke-QFReconAPIRequest -Token $OP_Token.AccessToken -HostingSiteID $GetOperatorFromCasino.hostingSiteID -CasinoID $casinoID -UserID $userID  -QueueInfo
+            $global:commitQueueExcel = $Queue.commitQueue
+
+            #create commit queue table headers if they dont already exist
+            if ($commitTableHasHeaders -eq 1) { Write-Host "The commit DataTable has headers set." }
+            else {
+                $commitQueueItem = $Queue.commitQueue[0]
+                foreach ($key in $commitQueueItem.PSObject.Properties.Name) {
+                    $commitQueueDataTable.Columns.Add($key)
+                } 
+            }
+            
+            #if records in commit queue, populate array to store them
+            if ($Queue.commitCount -gt 0) {
+                foreach ($Item in $Queue.commitQueue) {
+                    $global:commitQueue += $Item
+                }
+                
+                #loop through commit queue array, add each record to commit queue data table
+                foreach ($Record in $commitQueue) {
+                    $CR = @()
+                    foreach ($Item in $orderedKeysCommit) {
+                        if ($Record.PSObject.Properties.Name -contains $Item) {
+                            $itemValue = $Record.$Item
+                            $CR += $itemValue
+                        }
+                    }
+                    $commitQueueDataTable.Rows.Add(@($CR))
+                    $CR = @()
+                }
+                
+            }
+            
+            #create rollback queue table headers
+            if ($rollbackTableHasHeaders -eq 1) { Write-Host "The rollback DataTable has headers set." }
+            else {
+                $rollbackQueueItem = $Queue.rollbackQueue[0]
+                foreach ($key in $rollbackQueueItem.PSObject.Properties.Name) {
+                    $rollbackQueueDataTable.Columns.Add($key)
+                }
+            }
+            
+
+            #if records exist in rollback queue, populate array to store them
+            if ($Queue.rollbackCount -gt 0) {
+                $global:rollbackQueueExcel = $Queue.rollbackQueue
+                $global:rollbackQueue += $Queue.rollbackQueue
+            
+                foreach ($Record in $rollbackQueue) {
+                    $RR = $orderedKeysRollback | ForEach-Object {
+                        if ($Record.PSObject.Properties.Name -contains $_) {
+                            $Record.$_
+                        }
+                    }
+                    $rollbackQueueDataTable.Rows.Add(@($RR))
+                }
+            }
+            
+            $commitQueueGridView.DataSource = $commitQueueDataTable
+
+            if ($Queue.commitCount -gt 0) {
+                $CommitQueueLayoutPanel.Controls.Add($commitQueueGridView, 0, 1)
+                $CommitQueueLayoutPanel.Controls.Add($CommitQueueLbl, 0, 0)
+                $incompleteBetTab.Controls.Add($CommitQueueLayoutPanel)
+            }
+            else {
+                $CommitQueueLbl.Text = "No bets in commit queue"
+                $CommitQueueLayoutPanel.Controls.Add($CommitQueueLbl, 0, 0)
+                $incompleteBetTab.Controls.Add($CommitQueueLayoutPanel)
+            }
+            
+            $rollbackQueueGridView.DataSource = $rollbackQueueDataTable
+
+            if ($Queue.rollbackCount -gt 0) {
+                $RollbackQueueLayoutPanel.Controls.Add($rollbackQueueGridView, 0, 1)
+                $RollbackQueueLayoutPanel.Controls.Add($RollbackQueueLbl, 0, 0)
+                $incompleteBetTab.Controls.Add($RollbackQueueLayoutPanel)
+            }
+            else {
+                $RollbackQueueLbl.Text = "No bets in rollback queue"
+                $RollbackQueueLayoutPanel.Controls.Add($RollbackQueueLbl, 0, 0)
+                $incompleteBetTab.Controls.Add($RollbackQueueLayoutPanel)
+            }
+            
+            $QueueStatusLbl.Text = "Complete!"
+            if (($Queue.commitCount -gt 0) -or ($Queue.rollbackCount -gt 0)) {
+                $ExportResultLayoutPanel.Controls.Add($ClearQueueResultsBtn, 0, 0)
+                $ExportResultLayoutPanel.Controls.Add($IncompleteBetNameExcelChkBx, 1, 0)
+                $ExportResultLayoutPanel.Controls.Add($NameExcelTxtBx, 2, 0)
+                $ExportResultLayoutPanel.Controls.Add($ExportQueueResultsBtn, 3, 0)
+                $ExportResultLayoutPanel.Controls.Add($ExportQueueResultsLbl, 4, 0)
+                $incompleteBetTab.Controls.Add($ExportResultLayoutPanel)
+            }
+            $PlayerInfoLayoutPanel.Controls | Where-Object { $_ -is [System.Windows.Forms.TextBox] } | ForEach-Object {
+                $_.Add_MouseClick({ $this.Text = "" })
+            }
+        })
+        
+    $tabControl.TabPages.Add($incompleteBetTab)
+    ################## End of player incomplete bet tab
     $mainform.Controls.Add($tabControl)
 }
 $mainform.ShowDialog()

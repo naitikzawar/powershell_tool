@@ -121,6 +121,7 @@ function Invoke-QFRemedyAutoTicket {
         }
 
         Write-Host ((Get-RemedyLogPrefix $GPATicket.RequestId  $GPATicket.IncidentNumber) + "Checking casino related to ticket-operator check disabled for testing. TODO: Enable!!!")
+        
         # Validate if casino ID provided by operator is related to the operator ID that corresponds with the ticket
         <#
         $TicketOperatorID = $GPATicketDetail.OperatorId
@@ -296,15 +297,11 @@ function Invoke-QFRemedyAutoTicket {
             $DetailedDescription = $DetailedDescription + "`n`n ZIP file path: " + $GPAData.ZipFile
         }
 
-        $WorkInfoFields = @{
-            "WorkInfoType"         = "Working Log"
-            "ViewAccess"           = "Internal"
-            "Summary"              = "Powershell GPA worklog"
-            "RemedyUsername"       = $RemedyUsername
-            "Notes"                = $DetailedDescription
-        }
+
         # Now call the function to create the work info
-        $NewRemedyIncidentWorkInfoResult = New-QFRemedyIncidentWorkInfo -IncidentNumber $GPATicket.IncidentNumber -WorkInfoFields $WorkInfoFields
+        $NewRemedyIncidentWorkInfoResult = New-QFRemedyIncidentWorkInfo -IncidentNumber $GPATicket.IncidentNumber -RemedyUsername $RemedyUsername `
+        -WorkInfoType 'Working Log' -ViewAccess 'Internal' -Summary 'Powershell GPA worklog' -Notes $DetailedDescription
+
         if ($NewRemedyIncidentWorkInfoResult.Success -eq $true) {
             Write-Host ((Get-RemedyLogPrefix $GPATicket.RequestId $GPATicket.IncidentNumber) + "Created internal Working log with GPA results")
             return $true
@@ -324,16 +321,14 @@ function Invoke-QFRemedyAutoTicket {
             [String]$ZipFile
         )
 
-        $WorkInfoFields = @{
-            "WorkInfoType"         = "Working Log"
-            "ViewAccess"           = "Public"
-            "Summary"              = "Gamedata attachment"
-            "RemedyUsername"       = $RemedyUsername
-            "Detailed Description" = "Please see attached file for this round gameplay data.`n`nThis file has been compressed and password protected using the REQ number of this request as the password. You can use the REQ number of this request to access the file (eg: REQ1234567)"
-        }
-        # Now call the function to create the work info
+
+        $Notes = 'Please see attached file for this round gameplay data.`n`nThis file has been compressed and password protected using the REQ number of this request as the password. You can use the REQ number of this request to access the file (eg: REQ1234567)'
         [String[]] $Files = $ZipFile
-        $NewRemedyIncidentWorkInfoResult = New-QFRemedyIncidentWorkInfo -IncidentNumber $GPATicket.IncidentNumber -WorkInfoFields $WorkInfoFields -Files $Files
+
+        # Now call the function to create the work info
+        $NewRemedyIncidentWorkInfoResult = New-QFRemedyIncidentWorkInfo -IncidentNumber $GPATicket.IncidentNumber -RemedyUsername $RemedyUsername `
+        -WorkInfoType 'Status Update' -ViewAccess 'Public' -Summary 'Gamedata attachment' -Notes $Notes -Files $Files
+
         if ($NewRemedyIncidentWorkInfoResult.Success -eq $true) {
             Write-Host ((Get-RemedyLogPrefix $GPATicket.RequestId $GPATicket.IncidentNumber) + "Created new Public working Log with attachment")
             return $true;
@@ -357,24 +352,14 @@ function Invoke-QFRemedyAutoTicket {
             [PSCustomObject]$GPATicketDetail
 
         )
-        $AssigneeNotes = $GPATicketDetail.AssigneeNotes
 
-        # Also mark the ticket as processed
         #Summary update is not working
-        #$newSummary = $Prefix + $GPATicketDetail.Summary
+        $AssigneeNotes = $GPATicketDetail.AssigneeNotes
         $newTeamnotes = "$Prefix
 $AssigneeNotes"
 
-        $UpdateFields = @{
-            #Summary update is not working
-            #"Summary" = $newSummary
-
-            #On GetIncident teamnotes are in the AssigneeNotes field
-            #On UpdateIncident teamnotes are put in the TeamNotes field
-            "TeamNotes" = $newTeamnotes
-            "RemedyUsername" = $RemedyUsername
-        }
-        $UpdateIncidentResult = Update-QFRemedyIncident -IncidentNumber $GPATicketDetail.Id -UpdateFields $UpdateFields
+        # Mark ticket as processed via teamnotes
+        $UpdateIncidentResult = Update-QFRemedyIncident -IncidentNumber $GPATicketDetail.Id -RemedyUsername $RemedyUsername -TeamNotes $newTeamnotes
         if ($UpdateIncidentResult.Success -eq $true) {
             Write-Host ((Get-RemedyLogPrefix $GPATicketDetail.RequestId $GPATicketDetail.Id) + "Updated ticket teamnotes with $Prefix")
             return $true;
@@ -393,53 +378,52 @@ $AssigneeNotes"
         #Returns true/false for success
 
         # Now update the ticket with customer response and close it
-        $Resolution = "Hi Support`n`nThank you for your request.`n`nWe have had a look at the account provided and the rounds in question.`n"
+        $WinvResolutionText = "Hi Support`n`nThank you for your request.`n`nWe have had a look at the account provided and the rounds in question.`n"
         # Work out the text of the response based on the game stats results
         if ($GPAData.GameStatistics.Result -eq "WARNING") {
-            $Resolution = $Resolution + "It appears the player just got lucky. Removing their max payout will bring payout % to be within expected ranges. The game is paying out fairly and no suspicious activity was detected.`n`n" 
+            $WinvResolutionText = $WinvResolutionText + "It appears the player just got lucky. Removing their max payout will bring payout % to be within expected ranges. The game is paying out fairly and no suspicious activity was detected.`n`n" 
         }
         elseif ($GPAData.GameStatistics.Result -eq "OK") {
-            $Resolution = $Resolution + "It appears the player's payout % is within volatility of the game, and no suspicious activity was detected.`n`n"
+            $WinvResolutionText = $WinvResolutionText + "It appears the player's payout % is within volatility of the game, and no suspicious activity was detected.`n`n"
         }
 
         # We should always have a ZIP file containing a transaction audit, this is checked earlier in the script.
         If ($GPAData.Contents -like "PlayCheck*.pdf" -and $GPAData.Contents -like "Game Statistics*.pdf") {
-            $Resolution = $Resolution + "I have attached a play check and a game monitor report for this game, plus a transaction audit of the player's recent activity.`n`n"
+            $WinvResolutionText = $WinvResolutionText + "I have attached a play check and a game monitor report for this game, plus a transaction audit of the player's recent activity.`n`n"
         }
         elseif ($GPAData.Contents -like "PlayCheck*.pdf") {
-            $Resolution = $Resolution + "I have attached a play check report for this game, plus a transaction audit of the player's recent activity.`n`n"
+            $WinvResolutionText = $WinvResolutionText + "I have attached a play check report for this game, plus a transaction audit of the player's recent activity.`n`n"
         }
         elseif ($GPAData.Contents -like "Game Statistics*.pdf") {
-            $Resolution = $Resolution + "I have attached a game monitor report for this game, plus a transaction audit of the player's recent activity.`n`n"
+            $WinvResolutionText = $WinvResolutionText + "I have attached a game monitor report for this game, plus a transaction audit of the player's recent activity.`n`n"
         }
         else {
-            $Resolution = $Resolution + "I have attached a transaction audit of the player's recent activity.`n`n"
+            $WinvResolutionText = $WinvResolutionText + "I have attached a transaction audit of the player's recent activity.`n`n"
         }
 
         # ZIP file message
         #$Resolution = $Resolution + "Please note, this file has been compressed and password protected using the REQ number of this request as the password. You can use the REQ number of this request to access the file (eg: REQ1234567)`n`n"
         
         # Signature
-        $Resolution = $Resolution + "We are now resolving this call.`nHowever, please do not hesitate to contact us should you require any further assistance with this.`n`nKind regards`nGames Global Support Team"                  
+        $WinvResolutionText = $WinvResolutionText + "We are now resolving this call.`nHowever, please do not hesitate to contact us should you require any further assistance with this.`n`nKind regards`nGames Global Support Team"                  
         
-        $UpdateFields = @{
-            
-            "Status"                     = "Resolved"
-            "StatusReason"               = "No Further Action Required"
-            "Resolution Category"        = "Quickfire - Audit"
-            "Resolution Category Tier 2" = "Win verification"
-            "Resolution Category Tier 3" = "N/A"
-            "ResolutionMethod"           = "Remedy"
-            "DetailedRootCause"          = "Operator `u{2013} Skills and Knowledge (Operator)"
-            "ServiceCategory"            = "Quickfire"
-            "ServiceCategoryTier1"       = "Operator - Audit"
-            "ServiceCategoryTier2"       = "Win Legitimacy"
-            "ResolutionText"             = $Resolution
-            "RemedyUsername"             = $RemedyUsername
-        }
+        $WinvStatus = 'Resolved'
+        $WinvStatusReason = 'No Further Action Required'
+        $WinvResolutionMethod = 'Remedy'
+        $WinvDetailedRootCause = 'Operator `u{2013} Skills and Knowledge (Operator)'
+        $WinvServiceCategory = 'Quickfire'
+        $WinvServiceCategoryTier1 = 'Operator - Audit'
+        $WinvServiceCategoryTier2 = 'Win Legitimacy'
+        $WinvResolutionText = $Resolution
+        $WinvNoFeedbackProduct = 'Quickfire'
+        $WinvNoFeedbackMarket = 'N/A'
+        $WinvNoFeedbackSite = "Derivco Malaga"
 
+        $UpdateIncidentResult = Resolve-QFRemedyIncident -IncidentNumber $GPATicket.IncidentNumber -RemedyUsername $RemedyUsername -Status $WinvStatus -StatusReason $WinvStatusReason `
+        -ResolutionMethod $WinvResolutionMethod -DetailedRootCause $WinvDetailedRootCause `
+        -ServiceCategory $WinvServiceCategory -ServiceCategoryTier1 $WinvServiceCategoryTier1 -ServiceCategoryTier2 $WinvServiceCategoryTier2 `
+        -Product $WinvNoFeedbackProduct -Market $WinvNoFeedbackMarket -Site $WinvNoFeedbackSite -ResolutionText $WinvResolutionText
 
-        $UpdateIncidentResult = Resolve-QFRemedyIncident -IncidentNumber $GPATicket.IncidentNumber -UpdateFields $UpdateFields
         if ($UpdateIncidentResult.Success -eq $true) {
             Write-Host ((Get-RemedyLogPrefix $GPATicket.RequestId $GPATicket.IncidentNumber) + "Updated ticket with status Resolved and reason No Further Action Required")
             return $true            
